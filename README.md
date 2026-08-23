@@ -13,8 +13,8 @@ directement le contenu a mettre a la racine web.
 
 ## Deploiement
 
-Automatique : chaque `push` sur `main` declenche `.github/workflows/deploy.yml`, qui envoie
-les fichiers modifies en FTPS chez OVH.
+Heberge par GitHub Pages, servi sur https://dembs.fr .
+Chaque `push` sur `main` declenche `.github/workflows/deploy.yml`, qui publie le site.
 
     git add -A
     git commit -m "ce que j'ai change"
@@ -22,27 +22,23 @@ les fichiers modifies en FTPS chez OVH.
 
 Suivre le deploiement : `gh run watch`, ou l'onglet Actions du depot.
 
-### Ce dont le workflow a besoin (a definir une seule fois)
+Le fichier `CNAME` a la racine porte le domaine personnalise. Ne pas le supprimer :
+sans lui, GitHub sert le site sur dembs.github.io/dembs-site.
 
-Depot GitHub, Settings > Secrets and variables > Actions :
+### DNS (chez OVH, une seule fois)
 
-| Nom | Type | Valeur |
+Zone de `dembs.fr` :
+
+| Type | Sous-domaine | Cible |
 |---|---|---|
-| `FTP_SERVER` | secret | `ftp.clusterXXX.hosting.ovh.net`, onglet FTP-SSH d'OVH |
-| `FTP_USERNAME` | secret | le login FTP OVH |
-| `FTP_PASSWORD` | secret | le mot de passe FTP OVH |
-| `FTP_SERVER_DIR` | variable | le dossier racine, si different de `./www/` |
+| A | (vide) | 185.199.108.153 |
+| A | (vide) | 185.199.109.153 |
+| A | (vide) | 185.199.110.153 |
+| A | (vide) | 185.199.111.153 |
+| CNAME | www | dembs.github.io. |
 
-Le dossier racine se lit dans OVH, onglet Multisite, colonne « Dossier racine » de
-`www.dembs.fr`.
-
-### Premiere mise en ligne
-
-Le tout premier envoi transfere tout le site. Les suivants ne transferent que les fichiers
-modifies : l'action tient un etat de synchronisation sur le serveur.
-
-Activer aussi le certificat SSL Let's Encrypt : OVH, Hebergements, onglet Multisite,
-colonne SSL, « Regenerer le certificat SSL ». Sans ca le port 443 reste ferme.
+A ne pas toucher : les MX `mx0` a `mx3.mail.ovh.net`, le TXT SPF, et
+l'enregistrement A de `ressources.dembs.fr` qui sert le guide.
 
 ## Apercu local avant de pousser
 
