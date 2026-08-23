@@ -1,0 +1,70 @@
+name: Deploiement dembs.fr
+
+# Chaque push sur main envoie le site en FTP chez OVH.
+# Seuls les fichiers modifies sont transferes : l'action garde un etat de
+# synchronisation sur le serveur (.ftp-deploy-sync-state.json).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploiement-dembs-fr
+  cancel-in-progress: false
+
+jobs:
+  ftp:
+    name: Envoi FTP vers OVH
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperation du depot
+        uses: actions/checkout@v4
+
+      - name: Verification des secrets
+        env:
+          SERVER: ${{ secrets.FTP_SERVER }}
+          USERNAME: ${{ secrets.FTP_USERNAME }}
+          PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          manquants=""
+          [ -z "$SERVER" ]   && manquants="$manquants FTP_SERVER"
+          [ -z "$USERNAME" ] && manquants="$manquants FTP_USERNAME"
+          [ -z "$PASSWORD" ] && manquants="$manquants FTP_PASSWORD"
+          if [ -n "$manquants" ]; then
+            echo "Secrets manquants :$manquants"
+            echo "A definir dans Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "Secrets presents. Dossier cible : ${{ vars.FTP_SERVER_DIR || './www/' }}"
+
+      - name: Transfert
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          # surchargeable par une variable de depot FTP_SERVER_DIR
+          server-dir: ${{ vars.FTP_SERVER_DIR || './www/' }}
+          local-dir: ./
+          # fichiers de travail, jamais publies
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/README.md
+            **/node_modules/**
+            **/.DS_Store
+            **/Thumbs.db
+
+      - name: Controle du site en ligne
+        run: |
+          echo "Attente de la propagation, 10 s"
+          sleep 10
+          code=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 30 https://dembs.fr/ || echo "erreur")
+          echo "https://dembs.fr/ repond : $code"
+          if [ "$code" != "200" ]; then
+            echo "Le site ne repond pas 200. Si le certificat SSL n'est pas encore actif chez OVH, c'est normal."
+          fi

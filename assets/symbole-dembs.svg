@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 44" width="56" height="44" role="img" aria-label="Dembs">
+  <defs>
+    <linearGradient id="g" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#2182FE"/>
+      <stop offset="1" stop-color="#6021FE"/>
+    </linearGradient>
+  </defs>
+
+  <!-- traces de circuit -->
+  <g fill="none" stroke="url(#g)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 12h7l4 4h6"/>
+    <path d="M6 21h10l4 4h3"/>
+    <path d="M6 30h5l4 4h8"/>
+  </g>
+  <g fill="url(#g)">
+    <circle cx="3.4" cy="12" r="2.2"/>
+    <circle cx="3.4" cy="21" r="2.2"/>
+    <circle cx="3.4" cy="30" r="2.2"/>
+  </g>
+
+  <!-- telephone -->
+  <rect x="26" y="2" width="23" height="40" rx="5.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+  <path d="M34 7.5h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+
+  <!-- arc -->
+  <path d="M34 14.5a9.5 9.5 0 1 1 0 19" fill="none" stroke="url(#g)" stroke-width="2.4" stroke-linecap="round"/>
+
+  <!-- lecture -->
+  <path d="M34.5 18.6v10.8l9-5.4z" fill="url(#g)"/>
+</svg>

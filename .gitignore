@@ -1,0 +1,9 @@
+# fichiers systeme
+Thumbs.db
+.DS_Store
+
+# etat de synchronisation ecrit par l'action FTP sur le serveur
+.ftp-deploy-sync-state.json
+
+# archives locales
+*.zip
