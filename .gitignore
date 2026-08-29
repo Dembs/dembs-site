@@ -7,3 +7,6 @@ Thumbs.db
 
 # archives locales
 *.zip
+
+# maquettes temporaires du compagnon de brainstorming
+.superpowers/
