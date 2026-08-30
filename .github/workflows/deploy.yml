@@ -36,7 +36,14 @@ jobs:
           rsync -a --exclude '.git' \
                    --exclude '.github' \
                    --exclude '.gitignore' \
+                   --exclude '.worktrees' \
+                   --exclude '.superpowers' \
                    --exclude 'README.md' \
+                   --exclude 'docs' \
+                   --exclude 'tests' \
+                   --exclude 'package.json' \
+                   --exclude 'package-lock.json' \
+                   --exclude 'node_modules' \
                    --exclude 'site' \
                    ./ site/
           echo "Fichiers publies :"
