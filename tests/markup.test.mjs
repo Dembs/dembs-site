@@ -100,3 +100,34 @@ test("campaign keeps safe content slots hidden until a known focus is resolved",
   ]) assert.match(campaign, new RegExp(slot));
   assert.match(campaign, /data-campaign-affiliate hidden/);
 });
+
+test("nothing that leads to the paid call is advertised as free", () => {
+  // The cadrage call costs 39 €. The guide is the only genuinely free thing here.
+  const blocks = [
+    html.match(/<div class="action-bar">[\s\S]*?<\/div>\s*<\/body>/)?.[0] ?? "",
+    ...[...html.matchAll(/<article\b[\s\S]*?<\/article>/g)].map(([block]) => block)
+  ].filter((block) => block.includes("cal.com/dembs"));
+
+  assert.ok(blocks.length >= 2, "the call is offered in the action bar and in a card");
+  for (const block of blocks) {
+    assert.doesNotMatch(block, /gratuit/i, block.slice(0, 120));
+  }
+  assert.match(html, /45 min · 39 €/);
+  assert.match(html, /Appel de cadrage · 45 min · 39 €/);
+});
+
+test("the menu carries the booking action and a labelled toggle icon", () => {
+  const menu = html.match(/<nav id="site-menu"[\s\S]*?<\/nav>/)?.[0] ?? "";
+  assert.match(menu, /class="menu-cta"[^>]*href="https:\/\/cal\.com\/dembs\/cadrage-app"/);
+  // Two bars that CSS crosses into an X, rather than a bare glyph.
+  assert.match(html, /<span class="menu-icon" aria-hidden="true"><span><\/span><span><\/span><\/span>/);
+  assert.doesNotMatch(html, /☰/);
+});
+
+test("the upcoming service reads as a card, not a stray bullet", () => {
+  const soon = html.match(/<aside class="soon"[\s\S]*?<\/aside>/)?.[0] ?? "";
+  assert.ok(soon, "upcoming service card");
+  assert.match(soon, /<p class="meta">Bientôt<\/p>/);
+  assert.match(soon, /<h3>Montage vidéo accéléré par l’IA<\/h3>/);
+  assert.doesNotMatch(html, /class="note"/);
+});

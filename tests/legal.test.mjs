@@ -43,6 +43,6 @@ test("third-party disclosures cover every service the pages actually load", () =
 
 test("the page stays reachable and dated", () => {
   assert.match(html, /<link rel="canonical" href="https:\/\/dembs\.fr\/mentions-legales\.html">/);
-  assert.match(html, /Dernière mise à jour : 30 août 2026/);
+  assert.match(html, /Dernière mise à jour(&nbsp;| ): 30 août 2026/);
   assert.match(html, /class="skip-link"/);
 });
