@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const revealTagPattern = /<(?:aside|section|footer)\b[^>]*\sdata-reveal(?=\s|=|>)[^>]*>/g;
 
 test("homepage contains the validated positioning and section contracts", () => {
   assert.doesNotMatch(html, /<section class="hero"[^>]*\bdata-reveal\b/);
@@ -15,9 +16,14 @@ test("homepage contains the validated positioning and section contracts", () => 
 });
 
 test("homepage reveal groups declare capped stagger indices", () => {
-  const revealTags = [...html.matchAll(/<(?:aside|section|footer)\b[^>]*\bdata-reveal\b[^>]*>/g)].map(([tag]) => tag);
+  const revealTags = [...html.matchAll(revealTagPattern)].map(([tag]) => tag);
   const revealIndices = revealTags.map((tag) => Number(tag.match(/\bdata-reveal-index="(\d+)"/)?.[1]));
   assert.deepEqual(revealIndices, [0, 1, 2, 3, 4, 5, 6]);
+});
+
+test("reveal group matching excludes stagger-index-only elements", () => {
+  const fixture = '<section data-reveal-index="1"></section>';
+  assert.equal([...fixture.matchAll(revealTagPattern)].length, 0);
 });
 
 test("homepage preserves required external destinations", () => {
