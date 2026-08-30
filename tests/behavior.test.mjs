@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { initCarousel, initMenu, initReveals, isTapGesture, revealDelay, selectApp, wrapLoopPosition } from "../assets/js/site.js";
+import { initAppPicker, initMenu, initReveals, revealDelay, selectApp } from "../assets/js/site.js";
 
 const css = await readFile(new URL("../assets/css/site.css", import.meta.url), "utf8");
 
@@ -61,88 +61,6 @@ function makeDetailRoot() {
   };
 }
 
-function makeCarouselRoot(reducedMotion = true) {
-  const listeners = new Map();
-  const viewListeners = new Map();
-  const toggleListeners = new Map();
-  const mediaQuery = makeMediaQuery(reducedMotion);
-  const makeButton = (appId) => ({
-    dataset: { appId },
-    attributes: new Map(),
-    cloneNode() { return makeButton(appId); },
-    closest(selector) { return selector === "[data-app-id]" ? this : null; },
-    getAttribute(name) { return this.attributes.get(name) ?? null; },
-    setAttribute(name, value) { this.attributes.set(name, value); },
-    remove() {
-      const index = rail.children.indexOf(this);
-      if (index >= 0) rail.children.splice(index, 1);
-    }
-  });
-  const rail = {
-    capturedPointers: new Set(),
-    children: ["streetpark", "civi", "last-rep", "bascule"].map(makeButton),
-    clientWidth: 300,
-    itemWidth: 100,
-    scrollLeft: 0,
-    get scrollWidth() { return this.children.length * this.itemWidth; },
-    append(child) {
-      this.children.push(child);
-      Object.defineProperty(child, "offsetLeft", { get: () => this.children.indexOf(child) * this.itemWidth });
-    },
-    addEventListener(type, listener) { listeners.set(type, listener); },
-    contains(target) { return this.children.includes(target); },
-    hasPointerCapture(pointerId) { return this.capturedPointers.has(pointerId); },
-    releasePointerCapture(pointerId) { this.capturedPointers.delete(pointerId); },
-    setPointerCapture(pointerId) { this.capturedPointers.add(pointerId); }
-  };
-  rail.children.forEach((button, index) => {
-    Object.defineProperty(button, "offsetLeft", { get: () => rail.children.indexOf(button) * rail.itemWidth });
-  });
-  const toggle = {
-    attributes: new Map([["aria-pressed", "false"]]),
-    hidden: true,
-    textContent: "Pause",
-    addEventListener(type, listener) { toggleListeners.set(type, listener); },
-    getAttribute(name) { return this.attributes.get(name) ?? null; },
-    setAttribute(name, value) { this.attributes.set(name, value); }
-  };
-  const view = {
-    animationFrames: 0,
-    animationFrameCallbacks: [],
-    timeoutCallbacks: [],
-    addEventListener(type, listener) { viewListeners.set(type, listener); },
-    clearTimeout(id) {
-      if (this.timeoutCallbacks[id - 1]) this.timeoutCallbacks[id - 1].cancelled = true;
-    },
-    matchMedia: () => mediaQuery,
-    requestAnimationFrame(callback) {
-      this.animationFrames += 1;
-      this.animationFrameCallbacks.push(callback);
-    },
-    setTimeout(callback) {
-      this.timeoutCallbacks.push(callback);
-      return this.timeoutCallbacks.length;
-    },
-    runLatestTimeout() {
-      const callback = [...this.timeoutCallbacks].reverse().find((item) => !item.cancelled && !item.ran);
-      assert.ok(callback, "an active timeout was scheduled");
-      callback.ran = true;
-      callback();
-    }
-  };
-  return {
-    defaultView: view,
-    listeners,
-    mediaQuery,
-    querySelector: (selector) => selector === "#app-rail" ? rail : selector === "[data-carousel-toggle]" ? toggle : null,
-    rail,
-    toggle,
-    toggleListeners,
-    viewListeners,
-    view
-  };
-}
-
 function makeRevealRoot(mediaQuery = makeMediaQuery(false)) {
   const items = [2, 9].map((revealIndex) => {
     const properties = new Map();
@@ -198,17 +116,6 @@ function makeMenuRoot() {
   };
   return { button, buttonListeners, panel, root };
 }
-
-test("tap detection separates a touch from a drag", () => {
-  assert.equal(isTapGesture({ x: 10, y: 10 }, { x: 16, y: 15 }), true);
-  assert.equal(isTapGesture({ x: 10, y: 10 }, { x: 25, y: 10 }), false);
-});
-
-test("loop position remains inside one repeated app set", () => {
-  assert.equal(wrapLoopPosition(410, 400), 10);
-  assert.equal(wrapLoopPosition(-10, 400), 390);
-  assert.equal(wrapLoopPosition(25, 0), 0);
-});
 
 test("reveal staggering is capped to keep the page responsive", () => {
   assert.equal(revealDelay(0), 0);
@@ -319,204 +226,6 @@ test("app selection reveals store links or an explicit unpublished status", () =
   }
 });
 
-test("carousel clones only enough inert apps and respects reduced motion", () => {
-  const root = makeCarouselRoot();
-  initCarousel(root);
-
-  assert.equal(root.rail.children.length, 9);
-  assert.equal(root.rail.scrollWidth, root.rail.clientWidth * 3);
-  for (const clone of root.rail.children.slice(4)) {
-    assert.equal(clone.attributes.get("aria-hidden"), "true");
-    assert.equal(clone.attributes.get("tabindex"), "-1");
-  }
-  assert.equal(root.toggle.hidden, false);
-  assert.equal(root.toggle.textContent, "Lecture");
-  assert.equal(root.toggle.getAttribute("aria-pressed"), "true");
-  assert.equal(root.view.animationFrames, 1);
-  root.view.animationFrameCallbacks.shift()(0);
-  root.view.animationFrameCallbacks.shift()(1000);
-  assert.equal(root.rail.scrollLeft, 0);
-});
-
-test("carousel rebuilds clone coverage after a narrow-to-wide resize and preserves its logical position", () => {
-  const root = makeCarouselRoot(true);
-  initCarousel(root);
-  assert.equal(root.rail.children.length, 9);
-
-  root.rail.scrollLeft = 200;
-  root.rail.itemWidth = 125;
-  root.rail.clientWidth = 600;
-  const resize = root.viewListeners.get("resize");
-  assert.equal(typeof resize, "function");
-  resize();
-  root.view.runLatestTimeout();
-
-  assert.ok(root.rail.scrollWidth >= root.rail.clientWidth * 3);
-  assert.equal(root.rail.children.length, 15);
-  assert.equal(root.rail.scrollLeft, 250, "halfway through the old loop remains halfway through the resized loop");
-});
-
-test("visible carousel control keeps a manual pause until the visitor explicitly resumes", () => {
-  const root = makeCarouselRoot(false);
-  initCarousel(root);
-  root.view.animationFrameCallbacks.shift()(0);
-  root.view.animationFrameCallbacks.shift()(1000);
-  assert.equal(root.rail.scrollLeft, 30);
-
-  const toggle = root.toggleListeners.get("click");
-  assert.equal(typeof toggle, "function");
-  toggle();
-  assert.equal(root.toggle.textContent, "Lecture");
-  assert.equal(root.toggle.getAttribute("aria-pressed"), "true");
-  root.view.animationFrameCallbacks.shift()(2000);
-  root.listeners.get("mouseenter")();
-  root.listeners.get("mouseleave")();
-  root.view.runLatestTimeout();
-  root.view.animationFrameCallbacks.shift()(3000);
-  assert.equal(root.rail.scrollLeft, 30, "transient interaction cleanup cannot clear the manual pause");
-
-  toggle();
-  assert.equal(root.toggle.textContent, "Pause");
-  assert.equal(root.toggle.getAttribute("aria-pressed"), "false");
-  root.view.animationFrameCallbacks.shift()(4000);
-  assert.equal(root.rail.scrollLeft, 60);
-});
-
-test("carousel reacts to live reduced-motion changes without overriding a manual choice", () => {
-  const root = makeCarouselRoot(false);
-  initCarousel(root);
-  root.view.animationFrameCallbacks.shift()(0);
-  root.view.animationFrameCallbacks.shift()(1000);
-  assert.equal(root.rail.scrollLeft, 30);
-
-  root.mediaQuery.dispatch(true);
-  assert.equal(root.toggle.textContent, "Lecture");
-  root.view.animationFrameCallbacks.shift()(2000);
-  assert.equal(root.rail.scrollLeft, 30);
-
-  root.mediaQuery.dispatch(false);
-  assert.equal(root.toggle.textContent, "Pause");
-  root.view.animationFrameCallbacks.shift()(3000);
-  assert.equal(root.rail.scrollLeft, 60);
-
-  const toggle = root.toggleListeners.get("click");
-  assert.equal(typeof toggle, "function");
-  toggle();
-  root.mediaQuery.dispatch(true);
-  root.mediaQuery.dispatch(false);
-  root.view.animationFrameCallbacks.shift()(4000);
-  assert.equal(root.rail.scrollLeft, 60, "a manual pause survives later preference changes");
-});
-
-test("carousel accepts keyboard activation when no pointer gesture was recorded", () => {
-  const carousel = makeCarouselRoot();
-  const detail = makeDetailRoot();
-  const root = {
-    defaultView: carousel.defaultView,
-    querySelector: (selector) => selector === "#app-rail" ? carousel.rail : detail.querySelector(selector),
-    querySelectorAll: detail.querySelectorAll
-  };
-  const previousAnimationFrame = globalThis.requestAnimationFrame;
-  globalThis.requestAnimationFrame = (callback) => callback();
-  try {
-    initCarousel(root);
-    carousel.listeners.get("click")({ target: carousel.rail.children[3], detail: 1 });
-    assert.equal(detail.fields.get("[data-app-name]").textContent, "Bascule");
-  } finally {
-    globalThis.requestAnimationFrame = previousAnimationFrame;
-  }
-});
-
-test("carousel selects the focused app with Enter", () => {
-  const carousel = makeCarouselRoot();
-  const detail = makeDetailRoot();
-  const root = {
-    defaultView: carousel.defaultView,
-    querySelector: (selector) => selector === "#app-rail" ? carousel.rail : detail.querySelector(selector),
-    querySelectorAll: detail.querySelectorAll
-  };
-  const previousAnimationFrame = globalThis.requestAnimationFrame;
-  globalThis.requestAnimationFrame = (callback) => callback();
-  try {
-    initCarousel(root);
-    const keydown = carousel.listeners.get("keydown");
-    assert.equal(typeof keydown, "function");
-    keydown({
-      key: "Enter",
-      preventDefault() {},
-      target: carousel.rail.children[3]
-    });
-    assert.equal(detail.fields.get("[data-app-name]").textContent, "Bascule");
-  } finally {
-    globalThis.requestAnimationFrame = previousAnimationFrame;
-  }
-});
-
-test("carousel pauses on mouse hover and resumes after the delay", () => {
-  const root = makeCarouselRoot(false);
-  initCarousel(root);
-
-  root.view.animationFrameCallbacks.shift()(0);
-  root.view.animationFrameCallbacks.shift()(1000);
-  assert.equal(root.rail.scrollLeft, 30);
-
-  const mouseenter = root.listeners.get("mouseenter");
-  const mouseleave = root.listeners.get("mouseleave");
-  assert.equal(typeof mouseenter, "function");
-  assert.equal(typeof mouseleave, "function");
-  mouseenter();
-  root.view.animationFrameCallbacks.shift()(2000);
-  assert.equal(root.rail.scrollLeft, 30);
-
-  mouseleave();
-  root.view.runLatestTimeout();
-  root.view.animationFrameCallbacks.shift()(3000);
-  assert.equal(root.rail.scrollLeft, 60);
-});
-
-test("pointer capture recovers after an outside release without bypassing other pause reasons", () => {
-  const root = makeCarouselRoot(false);
-  initCarousel(root);
-
-  root.view.animationFrameCallbacks.shift()(0);
-  root.view.animationFrameCallbacks.shift()(1000);
-  assert.equal(root.rail.scrollLeft, 30);
-
-  root.listeners.get("mouseenter")();
-  root.listeners.get("pointerdown")({ clientX: 20, clientY: 20, pointerId: 7 });
-  assert.equal(root.rail.hasPointerCapture(7), true);
-
-  root.listeners.get("mouseleave")();
-  root.view.runLatestTimeout();
-  root.view.animationFrameCallbacks.shift()(2000);
-  assert.equal(root.rail.scrollLeft, 30, "pointer pause remains after hover ends");
-
-  root.listeners.get("pointerup")({ clientX: 120, clientY: 20, pointerId: 7 });
-  assert.equal(root.rail.hasPointerCapture(7), false);
-  root.view.timeoutCallbacks.at(-1)();
-  root.view.animationFrameCallbacks.shift()(3000);
-  assert.equal(root.rail.scrollLeft, 60, "outside release resumes after the delay");
-});
-
-test("touch cancellation clears its pause reason and lets autoplay resume", () => {
-  const root = makeCarouselRoot(false);
-  initCarousel(root);
-  root.view.animationFrameCallbacks.shift()(0);
-  root.view.animationFrameCallbacks.shift()(1000);
-  assert.equal(root.rail.scrollLeft, 30);
-
-  root.listeners.get("touchstart")({ touches: [{ clientX: 20, clientY: 20 }] });
-  root.view.animationFrameCallbacks.shift()(2000);
-  assert.equal(root.rail.scrollLeft, 30);
-
-  const touchcancel = root.listeners.get("touchcancel");
-  assert.equal(typeof touchcancel, "function");
-  touchcancel({ type: "touchcancel" });
-  root.view.runLatestTimeout();
-  root.view.animationFrameCallbacks.shift()(3000);
-  assert.equal(root.rail.scrollLeft, 60);
-});
-
 test("menu toggle names the action that matches its expanded state", () => {
   const { button, buttonListeners, root } = makeMenuRoot();
   initMenu(root);
@@ -541,4 +250,186 @@ test("reduced motion removes animation and transition delays", () => {
   const reducedMotionBlock = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*)\}\s*$/)?.[1] ?? "";
   assert.match(reducedMotionBlock, /animation-delay:\s*0(?:ms|s)\s*!important/);
   assert.match(reducedMotionBlock, /transition-delay:\s*0(?:ms|s)\s*!important/);
+});
+
+function withObserverStub(run) {
+  const previousWindow = globalThis.window;
+  const previousMatchMedia = globalThis.matchMedia;
+  const previousIntersectionObserver = globalThis.IntersectionObserver;
+  let observer;
+  globalThis.window = globalThis;
+  globalThis.matchMedia = () => ({ matches: false });
+  globalThis.IntersectionObserver = class {
+    constructor(callback) { this.callback = callback; observer = this; }
+    disconnect() {}
+    observe(item) { (this.items ??= []).push(item); }
+    unobserve(item) { (this.unobserved ??= []).push(item); }
+  };
+  try {
+    return run(() => observer);
+  } finally {
+    globalThis.window = previousWindow;
+    globalThis.matchMedia = previousMatchMedia;
+    globalThis.IntersectionObserver = previousIntersectionObserver;
+  }
+}
+
+test("a block flicked past the top still reveals instead of staying invisible", () => {
+  const root = makeRevealRoot();
+  withObserverStub((getObserver) => {
+    initReveals(root);
+    // A fast scroll batches callbacks: the entry lands after the block already
+    // left the viewport upwards, so it reports isIntersecting false and would
+    // never intersect again.
+    getObserver().callback([{
+      isIntersecting: false,
+      boundingClientRect: { top: -900, bottom: -120 },
+      target: root.items[0]
+    }]);
+    assert.equal(root.items[0].classList.contains("is-visible"), true);
+    assert.deepEqual(getObserver().unobserved, [root.items[0]]);
+  });
+});
+
+test("a block still below the fold stays hidden until it is reached", () => {
+  const root = makeRevealRoot();
+  withObserverStub((getObserver) => {
+    initReveals(root);
+    getObserver().callback([{
+      isIntersecting: false,
+      boundingClientRect: { top: 1400, bottom: 2100 },
+      target: root.items[1]
+    }]);
+    assert.equal(root.items[1].classList.contains("is-visible"), false);
+    assert.equal(getObserver().unobserved, undefined);
+  });
+});
+
+function makePickerRoot(preselected = null) {
+  const detailRoot = makeDetailRoot();
+  const gridListeners = new Map();
+  const grid = {
+    addEventListener: (type, listener) => gridListeners.set(type, listener),
+    querySelector: () => preselected
+  };
+  const root = {
+    ...detailRoot,
+    querySelector: (selector) => selector === "#app-grid" ? grid : detailRoot.querySelector(selector)
+  };
+  return { detailRoot, gridListeners, root };
+}
+
+test("the app picker renders the pre-selected tile on load", () => {
+  const { detailRoot, root } = makePickerRoot({ dataset: { appId: "streetpark" } });
+  const previousAnimationFrame = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = (callback) => callback();
+  try {
+    initAppPicker(root);
+    assert.equal(detailRoot.fields.get("[data-app-name]").textContent, "StreetPark");
+    assert.equal(detailRoot.properties.get("--app-background"), "#B6B3FF");
+    assert.equal(detailRoot.properties.get("--app-badge-background"), "#17142B");
+  } finally {
+    globalThis.requestAnimationFrame = previousAnimationFrame;
+  }
+});
+
+test("the app picker selects on tap without any autoplay machinery", () => {
+  const { detailRoot, gridListeners, root } = makePickerRoot();
+  const previousAnimationFrame = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = (callback) => callback();
+  try {
+    initAppPicker(root);
+    assert.deepEqual([...gridListeners.keys()], ["click"]);
+
+    const button = { dataset: { appId: "last-rep" }, closest: (selector) => selector === "[data-app-id]" ? button : null };
+    gridListeners.get("click")({ target: button });
+
+    assert.equal(detailRoot.fields.get("[data-app-name]").textContent, "Last Rep");
+    assert.equal(detailRoot.fields.get("[data-app-status]").hidden, false);
+    assert.equal(detailRoot.buttons[1].attributes.get("aria-current"), "true");
+  } finally {
+    globalThis.requestAnimationFrame = previousAnimationFrame;
+  }
+});
+
+test("a tap that lands outside any tile changes nothing", () => {
+  const { detailRoot, gridListeners, root } = makePickerRoot();
+  initAppPicker(root);
+  gridListeners.get("click")({ target: { closest: () => null } });
+  assert.equal(detailRoot.fields.get("[data-app-name]").textContent, "");
+});
+
+function makeViewportRevealRoot({ tops = [100, 2000], innerHeight = 800 } = {}) {
+  const mediaQuery = makeMediaQuery(false);
+  const timeouts = [];
+  const items = tops.map((top, index) => {
+    const properties = new Map();
+    return {
+      dataset: { revealIndex: String(index) },
+      classList: makeClassList(),
+      style: { setProperty: (name, value) => properties.set(name, value) },
+      getBoundingClientRect: () => ({ top, bottom: top + 300 }),
+      properties
+    };
+  });
+  return {
+    defaultView: {
+      innerHeight,
+      matchMedia: () => mediaQuery,
+      clearTimeout: () => {},
+      setTimeout: (callback) => { timeouts.push(callback); return timeouts.length; }
+    },
+    documentElement: { classList: makeClassList() },
+    items,
+    timeouts,
+    querySelectorAll: (selector) => selector === "[data-reveal]" ? items : []
+  };
+}
+
+test("whatever is already on screen reveals without waiting for a callback", () => {
+  const root = makeViewportRevealRoot();
+  withObserverStub((getObserver) => {
+    initReveals(root);
+    // Above the fold: readable immediately, and never handed to the observer.
+    assert.equal(root.items[0].classList.contains("is-visible"), true);
+    assert.equal(root.items[1].classList.contains("is-visible"), false);
+    assert.deepEqual(getObserver().items, [root.items[1]]);
+  });
+});
+
+test("content never stays invisible when the observer delivers nothing", () => {
+  const root = makeViewportRevealRoot();
+  withObserverStub(() => {
+    initReveals(root);
+    assert.equal(root.items[1].classList.contains("is-visible"), false);
+    assert.equal(root.timeouts.length, 1);
+
+    // A backgrounded tab defers delivery; the decoration must give way to the content.
+    root.timeouts[0]();
+
+    assert.equal(root.documentElement.classList.contains("reveal-enabled"), false);
+    assert.equal(root.items.every((item) => item.classList.contains("is-visible")), true);
+  });
+});
+
+test("the safety net stands down once the observer has delivered", () => {
+  const root = makeViewportRevealRoot();
+  withObserverStub((getObserver) => {
+    initReveals(root);
+    getObserver().callback([{ isIntersecting: true, boundingClientRect: { bottom: 400 }, target: root.items[1] }]);
+
+    root.timeouts[0]();
+
+    // Delivery worked, so the reveal effect survives for the rest of the visit.
+    assert.equal(root.documentElement.classList.contains("reveal-enabled"), true);
+  });
+});
+
+test("the pre-selected card renders without the entrance animation", () => {
+  const { detailRoot, root } = makePickerRoot({ dataset: { appId: "streetpark" } });
+  initAppPicker(root);
+  // is-entering fills both ways, so on load it would hold the card at opacity 0
+  // wherever the animation is throttled.
+  assert.equal(detailRoot.detail.classList.contains("is-entering"), false);
+  assert.equal(detailRoot.fields.get("[data-app-name]").textContent, "StreetPark");
 });

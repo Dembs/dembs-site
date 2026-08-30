@@ -27,7 +27,7 @@ test("reveal group matching excludes stagger-index-only elements", () => {
 });
 
 test("journey and service cards reset their reveal stagger within each group", () => {
-  const journeyGroup = html.match(/<div class="journey-grid">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  const journeyGroup = html.match(/<div class="journey-list">([\s\S]*?)<\/div>/)?.[1] ?? "";
   const serviceGroup = html.match(/<div class="card-grid">([\s\S]*?)<\/div>/)?.[1] ?? "";
   const journeyIndices = [...journeyGroup.matchAll(/<a\b[^>]*\bdata-reveal-index="(\d+)"[^>]*>/g)].map((match) => Number(match[1]));
   const serviceIndices = [...serviceGroup.matchAll(/<(?:article|aside)\b[^>]*\bdata-reveal-index="(\d+)"[^>]*>/g)].map((match) => Number(match[1]));
@@ -53,7 +53,24 @@ test("interactive controls expose accessible state", () => {
   assert.match(html, /aria-expanded=["']false["']/);
   assert.match(html, /aria-live=["']polite["']/);
   assert.match(html, /href=["']mentions-legales\.html["']/);
-  assert.match(html, /<button\b[^>]*\bdata-carousel-toggle\b[^>]*\baria-pressed=["']false["'][^>]*>\s*Pause\s*<\/button>/);
+});
+
+test("the app picker is a static grid, never an autoplaying rail", () => {
+  assert.match(html, /id=["']app-grid["']/);
+  assert.doesNotMatch(html, /data-carousel-toggle/);
+  assert.doesNotMatch(html, /id=["']app-rail["']/);
+  const grid = html.match(/<div id=["']app-grid["'][\s\S]*?<\/div>/)?.[0] ?? "";
+  const buttons = [...grid.matchAll(/<button\b[^>]*\bdata-app-id=["']([\w-]+)["'][^>]*>/g)].map((match) => match[1]);
+  assert.deepEqual(buttons, ["streetpark", "civi", "last-rep", "bascule"]);
+  // Every tile names the app it selects, so the target is legible before the tap.
+  assert.equal((grid.match(/<span>/g) ?? []).length, buttons.length);
+  assert.equal((grid.match(/aria-current=["']true["']/g) ?? []).length, 1);
+});
+
+test("a permanent booking action stays reachable once the hero scrolls away", () => {
+  const bar = html.match(/<div class="action-bar">[\s\S]*?<\/div>/)?.[0] ?? "";
+  assert.ok(bar, "action bar");
+  assert.match(bar, /https:\/\/cal\.com\/dembs\/cadrage-app/);
 });
 
 test("web fonts load asynchronously and retain a no-JavaScript stylesheet fallback", () => {

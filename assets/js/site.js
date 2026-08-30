@@ -1,14 +1,5 @@
 import { APPS, resolveCampaign } from "./content.js";
 
-export function isTapGesture(start, end, threshold = 8) {
-  return Math.abs(end.x - start.x) <= threshold && Math.abs(end.y - start.y) <= threshold;
-}
-
-export function wrapLoopPosition(position, loopWidth) {
-  if (loopWidth <= 0) return 0;
-  return ((position % loopWidth) + loopWidth) % loopWidth;
-}
-
 export function revealDelay(index) {
   return Math.min(Math.max(index, 0), 4) * 70;
 }
@@ -21,11 +12,17 @@ export function initReveals(root = document) {
   const motionPreference = view.matchMedia("(prefers-reduced-motion: reduce)");
   const Observer = view.IntersectionObserver ?? window.IntersectionObserver;
   let observer;
+  let safetyTimer;
+  let delivered = false;
 
   const showImmediately = () => {
+    view.clearTimeout?.(safetyTimer);
     observer?.disconnect();
     observer = undefined;
     root.documentElement.classList.remove("reveal-enabled");
+    // Snap rather than transition: a paused compositor (hidden tab) would
+    // otherwise leave the content frozen part-way through the fade.
+    root.documentElement.classList.add("reveal-disabled");
     items.forEach((item) => item.classList.add("is-visible"));
   };
   const enableReveals = () => {
@@ -36,14 +33,34 @@ export function initReveals(root = document) {
     root.documentElement.classList.add("reveal-enabled");
     items.forEach((item) => item.style.setProperty("--reveal-delay", `${revealDelay(Number(item.dataset.revealIndex || 0))}ms`));
     observer?.disconnect();
+    delivered = false;
     observer = new Observer((entries) => {
+      delivered = true;
       for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
+        // Delivery can be deferred, so an entry may arrive once its block has
+        // already scrolled past the top. It will never intersect again, so
+        // reveal it rather than leaving it stuck at opacity 0.
+        const scrolledPast = entry.boundingClientRect?.bottom <= 0;
+        if (!entry.isIntersecting && !scrolledPast) continue;
         entry.target.classList.add("is-visible");
         observer.unobserve(entry.target);
       }
     }, { threshold: 0.12, rootMargin: "0px 0px -8%" });
+
+    // Whatever is already on screen is revealed without waiting for a callback,
+    // so the first screenful is readable even when delivery is deferred.
+    const fold = view.innerHeight ?? 0;
+    items.forEach((item) => {
+      const top = item.getBoundingClientRect?.().top;
+      if (typeof top === "number" && top < fold) item.classList.add("is-visible");
+    });
     items.filter((item) => !item.classList.contains("is-visible")).forEach((item) => observer.observe(item));
+
+    // A working observer always delivers an initial callback. If none arrives,
+    // the effect is not running (a backgrounded tab defers delivery, for one),
+    // and content must never stay invisible because of a decoration.
+    view.clearTimeout?.(safetyTimer);
+    safetyTimer = view.setTimeout?.(() => { if (!delivered) showImmediately(); }, 2500);
   };
   const applyMotionPreference = ({ matches } = motionPreference) => matches ? showImmediately() : enableReveals();
 
@@ -52,7 +69,7 @@ export function initReveals(root = document) {
   applyMotionPreference();
 }
 
-export function selectApp(id, root = document) {
+export function selectApp(id, root = document, { animate = true } = {}) {
   const app = APPS.find((item) => item.id === id);
   const detail = root.querySelector("#app-detail");
   if (!app || !detail) return;
@@ -65,6 +82,8 @@ export function selectApp(id, root = document) {
   detail.querySelector("[data-app-description]").textContent = app.description;
   detail.style.setProperty("--app-background", app.background);
   detail.style.setProperty("--app-foreground", app.foreground);
+  detail.style.setProperty("--app-badge-background", app.badgeBackground);
+  detail.style.setProperty("--app-badge-foreground", app.badgeForeground);
 
   const stores = detail.querySelector("[data-app-stores]");
   const status = detail.querySelector("[data-app-status]");
@@ -80,199 +99,28 @@ export function selectApp(id, root = document) {
     button.setAttribute("aria-current", String(button.dataset.appId === id));
   });
   detail.classList.remove("is-entering");
-  requestAnimationFrame(() => detail.classList.add("is-entering"));
+  // The entrance animation fills both ways, so it must only ever run in response
+  // to a tap. On load it could be throttled and hold the card at opacity 0.
+  if (!animate) return;
+  const view = root.defaultView ?? (typeof window === "undefined" ? undefined : window);
+  const paint = view?.requestAnimationFrame?.bind(view);
+  if (paint) paint(() => detail.classList.add("is-entering"));
+  else detail.classList.add("is-entering");
 }
 
-export function initCarousel(root = document) {
-  const rail = root.querySelector("#app-rail");
-  if (!rail) return;
-
-  const view = root.defaultView ?? window;
-  const toggle = root.querySelector("[data-carousel-toggle]");
-  const originals = [...rail.children];
-  const originalCount = originals.length;
-  if (!originalCount) return;
-
-  let loopWidth = 0;
-  let position = 0;
-  let previousTime;
-  let resizeTimer;
-  const resumeTimers = new Map();
-  const pauseReasons = new Set();
-  let pointerStart;
-  let pointerEnd;
-
-  const rebuildRail = () => {
-    const previousLoopWidth = loopWidth;
-    const progress = previousLoopWidth > 0
-      ? wrapLoopPosition(rail.scrollLeft, previousLoopWidth) / previousLoopWidth
-      : 0;
-
-    [...rail.children].slice(originalCount).forEach((clone) => clone.remove());
-    let cloneIndex = 0;
-    const targetWidth = rail.clientWidth * 3;
-    while (rail.scrollWidth < targetWidth || rail.children.length === originalCount) {
-      const clone = originals[cloneIndex % originalCount].cloneNode(true);
-      clone.setAttribute("aria-hidden", "true");
-      clone.setAttribute("tabindex", "-1");
-      rail.append(clone);
-      cloneIndex += 1;
-    }
-
-    const first = rail.children[0];
-    const firstClone = rail.children[originalCount];
-    loopWidth = first && firstClone ? firstClone.offsetLeft - first.offsetLeft : 0;
-    position = previousLoopWidth > 0
-      ? progress * loopWidth
-      : wrapLoopPosition(rail.scrollLeft, loopWidth);
-    rail.scrollLeft = position;
-  };
-  const scheduleRailRebuild = () => {
-    if (resizeTimer !== undefined) view.clearTimeout(resizeTimer);
-    resizeTimer = view.setTimeout(() => {
-      resizeTimer = undefined;
-      rebuildRail();
-    }, 120);
-  };
-  rebuildRail();
-  view.addEventListener?.("resize", scheduleRailRebuild);
-
-  const clearResumeTimer = (reason) => {
-    const timer = resumeTimers.get(reason);
-    if (timer !== undefined) view.clearTimeout(timer);
-    resumeTimers.delete(reason);
-  };
-  const pause = (reason) => {
-    clearResumeTimer(reason);
-    pauseReasons.add(reason);
-  };
-  const resumeAfter = (reason) => {
-    clearResumeTimer(reason);
-    const timer = view.setTimeout(() => {
-      pauseReasons.delete(reason);
-      resumeTimers.delete(reason);
-    }, 2000);
-    resumeTimers.set(reason, timer);
-  };
-  const pauseBriefly = (reason) => {
-    pause(reason);
-    resumeAfter(reason);
-  };
-  const updateToggle = () => {
-    if (!toggle) return;
-    const persistentlyPaused = pauseReasons.has("manual") || pauseReasons.has("motion");
-    toggle.hidden = false;
-    toggle.textContent = persistentlyPaused ? "Lecture" : "Pause";
-    toggle.setAttribute("aria-pressed", String(persistentlyPaused));
-  };
-
-  const motionPreference = view.matchMedia("(prefers-reduced-motion: reduce)");
-  if (motionPreference.matches) pauseReasons.add("motion");
-  const applyMotionPreference = ({ matches }) => {
-    clearResumeTimer("motion");
-    if (matches) pauseReasons.add("motion");
-    else pauseReasons.delete("motion");
-    updateToggle();
-  };
-  if (motionPreference.addEventListener) motionPreference.addEventListener("change", applyMotionPreference);
-  else motionPreference.addListener?.(applyMotionPreference);
-  toggle?.addEventListener("click", () => {
-    const persistentlyPaused = pauseReasons.has("manual") || pauseReasons.has("motion");
-    clearResumeTimer("manual");
-    clearResumeTimer("motion");
-    pauseReasons.delete("motion");
-    if (persistentlyPaused) pauseReasons.delete("manual");
-    else pauseReasons.add("manual");
-    updateToggle();
-  });
-  updateToggle();
-
-  rail.addEventListener("pointerdown", (event) => {
-    pointerStart = { x: event.clientX, y: event.clientY };
-    pointerEnd = pointerStart;
-    rail.setPointerCapture?.(event.pointerId);
-    pause("pointer");
-  });
-  rail.addEventListener("pointermove", (event) => {
-    if (!pointerStart) return;
-    pointerEnd = { x: event.clientX, y: event.clientY };
-  });
-  rail.addEventListener("pointerup", (event) => {
-    pointerEnd = { x: event.clientX, y: event.clientY };
-    position = wrapLoopPosition(rail.scrollLeft, loopWidth);
-    if (rail.hasPointerCapture?.(event.pointerId)) rail.releasePointerCapture(event.pointerId);
-    resumeAfter("pointer");
-  });
-  rail.addEventListener("pointercancel", (event) => {
-    pointerStart = undefined;
-    pointerEnd = undefined;
-    if (rail.hasPointerCapture?.(event.pointerId)) rail.releasePointerCapture(event.pointerId);
-    resumeAfter("pointer");
-  });
-  rail.addEventListener("touchstart", (event) => {
-    const touch = event.touches[0];
-    if (touch && !pointerStart) {
-      pointerStart = { x: touch.clientX, y: touch.clientY };
-      pointerEnd = pointerStart;
-    }
-    pause("touch");
-  }, { passive: true });
-  rail.addEventListener("touchmove", (event) => {
-    const touch = event.touches[0];
-    if (touch) pointerEnd = { x: touch.clientX, y: touch.clientY };
-  }, { passive: true });
-  const finishTouch = (event) => {
-    position = wrapLoopPosition(rail.scrollLeft, loopWidth);
-    if (event.type === "touchcancel") {
-      pointerStart = undefined;
-      pointerEnd = undefined;
-    }
-    resumeAfter("touch");
-  };
-  rail.addEventListener("touchend", finishTouch, { passive: true });
-  rail.addEventListener("touchcancel", finishTouch, { passive: true });
-  rail.addEventListener("wheel", () => {
-    position = wrapLoopPosition(rail.scrollLeft, loopWidth);
-    pauseBriefly("wheel");
-  }, { passive: true });
-  rail.addEventListener("pointerenter", () => pause("hover"));
-  rail.addEventListener("pointerleave", () => resumeAfter("hover"));
-  rail.addEventListener("mouseenter", () => pause("hover"));
-  rail.addEventListener("mouseleave", () => resumeAfter("hover"));
-  rail.addEventListener("focusin", () => pause("focus"));
-  rail.addEventListener("focusout", (event) => {
-    if (!rail.contains(event.relatedTarget)) resumeAfter("focus");
-  });
-  rail.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
+// The four apps all fit on one mobile screen, so the picker is a static grid:
+// no autoplay, no clones, and every tap target stays where the thumb left it.
+export function initAppPicker(root = document) {
+  const grid = root.querySelector("#app-grid");
+  if (!grid) return;
+  grid.addEventListener("click", (event) => {
     const button = event.target.closest("[data-app-id]");
-    if (!button || button.getAttribute("aria-hidden") === "true") return;
-    event.preventDefault();
-    selectApp(button.dataset.appId, root);
+    if (button) selectApp(button.dataset.appId, root);
   });
-  rail.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-app-id]");
-    if (!button || button.getAttribute("aria-hidden") === "true") return;
-    const tap = !pointerStart || (pointerEnd && isTapGesture(pointerStart, pointerEnd));
-    pointerStart = undefined;
-    pointerEnd = undefined;
-    if (tap) selectApp(button.dataset.appId, root);
-  });
-
-  const advance = (time) => {
-    if (previousTime !== undefined) {
-      const elapsedSeconds = (time - previousTime) / 1000;
-      if (pauseReasons.size) {
-        position = wrapLoopPosition(rail.scrollLeft, loopWidth);
-      } else {
-        position = wrapLoopPosition(position + 30 * elapsedSeconds, loopWidth);
-        rail.scrollLeft = position;
-      }
-    }
-    previousTime = time;
-    view.requestAnimationFrame(advance);
-  };
-  view.requestAnimationFrame(advance);
+  // The markup ships one tile pre-selected; render its colours straight away so
+  // the card does not sit neutral until the first tap.
+  const current = grid.querySelector('[data-app-id][aria-current="true"]');
+  if (current) selectApp(current.dataset.appId, root, { animate: false });
 }
 
 export function initMenu(root = document) {
@@ -340,6 +188,6 @@ export function renderFocusCampaign(root = document, search = location.search) {
 if (typeof document !== "undefined") {
   initMenu();
   renderFocusCampaign();
-  initCarousel();
+  initAppPicker();
   initReveals();
 }
