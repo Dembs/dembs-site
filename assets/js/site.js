@@ -15,18 +15,41 @@ export function revealDelay(index) {
 
 export function initReveals(root = document) {
   const items = [...root.querySelectorAll("[data-reveal]")];
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!items.length || reduced || !("IntersectionObserver" in window)) return;
-  root.documentElement.classList.add("reveal-enabled");
-  items.forEach((item) => item.style.setProperty("--reveal-delay", `${revealDelay(Number(item.dataset.revealIndex || 0))}ms`));
-  const observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      entry.target.classList.add("is-visible");
-      observer.unobserve(entry.target);
+  if (!items.length) return;
+
+  const view = root.defaultView ?? window;
+  const motionPreference = view.matchMedia("(prefers-reduced-motion: reduce)");
+  const Observer = view.IntersectionObserver ?? window.IntersectionObserver;
+  let observer;
+
+  const showImmediately = () => {
+    observer?.disconnect();
+    observer = undefined;
+    root.documentElement.classList.remove("reveal-enabled");
+    items.forEach((item) => item.classList.add("is-visible"));
+  };
+  const enableReveals = () => {
+    if (!Observer) {
+      showImmediately();
+      return;
     }
-  }, { threshold: 0.12, rootMargin: "0px 0px -8%" });
-  items.forEach((item) => observer.observe(item));
+    root.documentElement.classList.add("reveal-enabled");
+    items.forEach((item) => item.style.setProperty("--reveal-delay", `${revealDelay(Number(item.dataset.revealIndex || 0))}ms`));
+    observer?.disconnect();
+    observer = new Observer((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      }
+    }, { threshold: 0.12, rootMargin: "0px 0px -8%" });
+    items.filter((item) => !item.classList.contains("is-visible")).forEach((item) => observer.observe(item));
+  };
+  const applyMotionPreference = ({ matches } = motionPreference) => matches ? showImmediately() : enableReveals();
+
+  if (motionPreference.addEventListener) motionPreference.addEventListener("change", applyMotionPreference);
+  else motionPreference.addListener?.(applyMotionPreference);
+  applyMotionPreference();
 }
 
 export function selectApp(id, root = document) {
@@ -65,51 +88,104 @@ export function initCarousel(root = document) {
   if (!rail) return;
 
   const view = root.defaultView ?? window;
+  const toggle = root.querySelector("[data-carousel-toggle]");
   const originals = [...rail.children];
   const originalCount = originals.length;
   if (!originalCount) return;
 
-  let cloneIndex = 0;
-  const targetWidth = rail.clientWidth * 3;
-  while (rail.scrollWidth < targetWidth || rail.children.length === originalCount) {
-    const clone = originals[cloneIndex % originalCount].cloneNode(true);
-    clone.setAttribute("aria-hidden", "true");
-    clone.setAttribute("tabindex", "-1");
-    rail.append(clone);
-    cloneIndex += 1;
-  }
-
-  const first = rail.children[0];
-  const firstClone = rail.children[originalCount];
-  const loopWidth = first && firstClone ? firstClone.offsetLeft - first.offsetLeft : 0;
-  let position = wrapLoopPosition(rail.scrollLeft, loopWidth);
+  let loopWidth = 0;
+  let position = 0;
   let previousTime;
-  let resumeTimer;
+  let resizeTimer;
+  const resumeTimers = new Map();
   const pauseReasons = new Set();
-  let paused = false;
   let pointerStart;
   let pointerEnd;
 
-  const clearResumeTimer = () => {
-    if (resumeTimer !== undefined) view.clearTimeout(resumeTimer);
-    resumeTimer = undefined;
+  const rebuildRail = () => {
+    const previousLoopWidth = loopWidth;
+    const progress = previousLoopWidth > 0
+      ? wrapLoopPosition(rail.scrollLeft, previousLoopWidth) / previousLoopWidth
+      : 0;
+
+    [...rail.children].slice(originalCount).forEach((clone) => clone.remove());
+    let cloneIndex = 0;
+    const targetWidth = rail.clientWidth * 3;
+    while (rail.scrollWidth < targetWidth || rail.children.length === originalCount) {
+      const clone = originals[cloneIndex % originalCount].cloneNode(true);
+      clone.setAttribute("aria-hidden", "true");
+      clone.setAttribute("tabindex", "-1");
+      rail.append(clone);
+      cloneIndex += 1;
+    }
+
+    const first = rail.children[0];
+    const firstClone = rail.children[originalCount];
+    loopWidth = first && firstClone ? firstClone.offsetLeft - first.offsetLeft : 0;
+    position = previousLoopWidth > 0
+      ? progress * loopWidth
+      : wrapLoopPosition(rail.scrollLeft, loopWidth);
+    rail.scrollLeft = position;
+  };
+  const scheduleRailRebuild = () => {
+    if (resizeTimer !== undefined) view.clearTimeout(resizeTimer);
+    resizeTimer = view.setTimeout(() => {
+      resizeTimer = undefined;
+      rebuildRail();
+    }, 120);
+  };
+  rebuildRail();
+  view.addEventListener?.("resize", scheduleRailRebuild);
+
+  const clearResumeTimer = (reason) => {
+    const timer = resumeTimers.get(reason);
+    if (timer !== undefined) view.clearTimeout(timer);
+    resumeTimers.delete(reason);
   };
   const pause = (reason) => {
-    clearResumeTimer();
+    clearResumeTimer(reason);
     pauseReasons.add(reason);
-    paused = true;
   };
   const resumeAfter = (reason) => {
-    pauseReasons.delete(reason);
-    clearResumeTimer();
-    resumeTimer = view.setTimeout(() => {
-      if (!pauseReasons.size) paused = false;
+    clearResumeTimer(reason);
+    const timer = view.setTimeout(() => {
+      pauseReasons.delete(reason);
+      resumeTimers.delete(reason);
     }, 2000);
+    resumeTimers.set(reason, timer);
   };
   const pauseBriefly = (reason) => {
     pause(reason);
     resumeAfter(reason);
   };
+  const updateToggle = () => {
+    if (!toggle) return;
+    const persistentlyPaused = pauseReasons.has("manual") || pauseReasons.has("motion");
+    toggle.hidden = false;
+    toggle.textContent = persistentlyPaused ? "Lecture" : "Pause";
+    toggle.setAttribute("aria-pressed", String(persistentlyPaused));
+  };
+
+  const motionPreference = view.matchMedia("(prefers-reduced-motion: reduce)");
+  if (motionPreference.matches) pauseReasons.add("motion");
+  const applyMotionPreference = ({ matches }) => {
+    clearResumeTimer("motion");
+    if (matches) pauseReasons.add("motion");
+    else pauseReasons.delete("motion");
+    updateToggle();
+  };
+  if (motionPreference.addEventListener) motionPreference.addEventListener("change", applyMotionPreference);
+  else motionPreference.addListener?.(applyMotionPreference);
+  toggle?.addEventListener("click", () => {
+    const persistentlyPaused = pauseReasons.has("manual") || pauseReasons.has("motion");
+    clearResumeTimer("manual");
+    clearResumeTimer("motion");
+    pauseReasons.delete("motion");
+    if (persistentlyPaused) pauseReasons.delete("manual");
+    else pauseReasons.add("manual");
+    updateToggle();
+  });
+  updateToggle();
 
   rail.addEventListener("pointerdown", (event) => {
     pointerStart = { x: event.clientX, y: event.clientY };
@@ -145,10 +221,16 @@ export function initCarousel(root = document) {
     const touch = event.touches[0];
     if (touch) pointerEnd = { x: touch.clientX, y: touch.clientY };
   }, { passive: true });
-  rail.addEventListener("touchend", () => {
+  const finishTouch = (event) => {
     position = wrapLoopPosition(rail.scrollLeft, loopWidth);
+    if (event.type === "touchcancel") {
+      pointerStart = undefined;
+      pointerEnd = undefined;
+    }
     resumeAfter("touch");
-  }, { passive: true });
+  };
+  rail.addEventListener("touchend", finishTouch, { passive: true });
+  rail.addEventListener("touchcancel", finishTouch, { passive: true });
   rail.addEventListener("wheel", () => {
     position = wrapLoopPosition(rail.scrollLeft, loopWidth);
     pauseBriefly("wheel");
@@ -177,11 +259,10 @@ export function initCarousel(root = document) {
     if (tap) selectApp(button.dataset.appId, root);
   });
 
-  if (view.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const advance = (time) => {
     if (previousTime !== undefined) {
       const elapsedSeconds = (time - previousTime) / 1000;
-      if (paused) {
+      if (pauseReasons.size) {
         position = wrapLoopPosition(rail.scrollLeft, loopWidth);
       } else {
         position = wrapLoopPosition(position + 30 * elapsedSeconds, loopWidth);
@@ -204,6 +285,7 @@ export function initMenu(root = document) {
     panel.hidden = true;
     scrim.hidden = true;
     button.setAttribute("aria-expanded", "false");
+    button.setAttribute("aria-label", "Ouvrir le menu");
     root.body.classList.remove("menu-open");
     button.focus();
   };
@@ -211,6 +293,7 @@ export function initMenu(root = document) {
     panel.hidden = false;
     scrim.hidden = false;
     button.setAttribute("aria-expanded", "true");
+    button.setAttribute("aria-label", "Fermer le menu");
     root.body.classList.add("menu-open");
     panel.querySelector("a")?.focus();
   };

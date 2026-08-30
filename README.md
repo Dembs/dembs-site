@@ -66,7 +66,22 @@ Lancer aussi la suite de verification avant de pousser :
 2. Tester `http://127.0.0.1:8777/?focus=<identifiant>`.
 3. Placer `https://dembs.fr/?focus=<identifiant>` dans la bio.
 4. Signaler `affiliate: true` pour tout lien affilié.
-5. Supprimer ou désactiver l’entrée lorsque la campagne n’est plus utilisée.
+5. Supprimer l’entrée de `CAMPAIGNS` lorsque la campagne n’est plus utilisée. Il
+   n’existe pas de drapeau de désactivation : un identifiant absent est ignoré et le
+   bloc contextuel reste masqué.
+
+## Ajouter une recommandation
+
+Les recommandations ne viennent pas d’une configuration JavaScript. Quand un outil,
+son usage réel et sa destination sont approuvés :
+
+1. Ajouter manuellement sa carte dans le conteneur `[data-recommendation-list]` de
+   `index.html` avec un titre, l’usage concret dans les projets et un lien HTTPS réel.
+2. Ajouter la mention `Lien affilié` dans la carte si la destination est affiliée.
+3. Retirer l’attribut `hidden` de la section `#recommendations` seulement quand au
+   moins une carte complète est présente.
+4. Pour retirer la dernière recommandation, supprimer sa carte puis remettre
+   l’attribut `hidden` sur la section.
 
 ## A finir
 
@@ -75,5 +90,5 @@ Lancer aussi la suite de verification avant de pousser :
 - Mentions legales, ligne TVA : decommenter la mention de franchise en base (article 293 B)
   ou la remplacer par le numero de TVA intracommunautaire.
 - Passer l'evenement cal.com de 30 a 45 minutes, la page affiche 45 min.
-- Recommandations : la section reste masquee tant qu'aucun contenu approuve et aucune
-  destination reelle ne sont fournis par la configuration. Aucune mention de Wayhost.
+- Recommandations : ne publier une carte qu’après validation de son contenu et de sa
+  destination réelle. Aucune mention de Wayhost.

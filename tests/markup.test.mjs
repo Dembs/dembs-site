@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-const revealTagPattern = /<(?:aside|section|footer)\b[^>]*\sdata-reveal(?=\s|=|>)[^>]*>/g;
+const pageRevealTagPattern = /(?:<aside\b(?=[^>]*\bid=["']campaign["'])|<section\b|<footer\b)[^>]*\sdata-reveal(?=\s|=|>)[^>]*>/g;
 
 test("homepage contains the validated positioning and section contracts", () => {
   assert.doesNotMatch(html, /<section class="hero"[^>]*\bdata-reveal\b/);
@@ -16,14 +16,26 @@ test("homepage contains the validated positioning and section contracts", () => 
 });
 
 test("homepage reveal groups declare capped stagger indices", () => {
-  const revealTags = [...html.matchAll(revealTagPattern)].map(([tag]) => tag);
+  const revealTags = [...html.matchAll(pageRevealTagPattern)].map(([tag]) => tag);
   const revealIndices = revealTags.map((tag) => Number(tag.match(/\bdata-reveal-index="(\d+)"/)?.[1]));
   assert.deepEqual(revealIndices, [0, 1, 2, 3, 4, 5, 6]);
 });
 
 test("reveal group matching excludes stagger-index-only elements", () => {
   const fixture = '<section data-reveal-index="1"></section>';
-  assert.equal([...fixture.matchAll(revealTagPattern)].length, 0);
+  assert.equal([...fixture.matchAll(pageRevealTagPattern)].length, 0);
+});
+
+test("journey and service cards reset their reveal stagger within each group", () => {
+  const journeyGroup = html.match(/<div class="journey-grid">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  const serviceGroup = html.match(/<div class="card-grid">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  const journeyIndices = [...journeyGroup.matchAll(/<a\b[^>]*\bdata-reveal-index="(\d+)"[^>]*>/g)].map((match) => Number(match[1]));
+  const serviceIndices = [...serviceGroup.matchAll(/<(?:article|aside)\b[^>]*\bdata-reveal-index="(\d+)"[^>]*>/g)].map((match) => Number(match[1]));
+
+  assert.deepEqual(journeyIndices, [0, 1, 2]);
+  assert.deepEqual(serviceIndices, [0, 1, 2]);
+  assert.equal((journeyGroup.match(/\bdata-reveal(?=\s|=|>)/g) ?? []).length, 3);
+  assert.equal((serviceGroup.match(/\bdata-reveal(?=\s|=|>)/g) ?? []).length, 3);
 });
 
 test("homepage preserves required external destinations", () => {
@@ -41,6 +53,22 @@ test("interactive controls expose accessible state", () => {
   assert.match(html, /aria-expanded=["']false["']/);
   assert.match(html, /aria-live=["']polite["']/);
   assert.match(html, /href=["']mentions-legales\.html["']/);
+  assert.match(html, /<button\b[^>]*\bdata-carousel-toggle\b[^>]*\baria-pressed=["']false["'][^>]*>\s*Pause\s*<\/button>/);
+});
+
+test("web fonts load asynchronously and retain a no-JavaScript stylesheet fallback", () => {
+  const fontUrlPattern = /https:\/\/fonts\.googleapis\.com\/css2\?[^"']+/;
+  const preload = html.match(new RegExp(`<link\\b(?=[^>]*\\brel=["']preload["'])(?=[^>]*\\bas=["']style["'])[^>]*\\bhref=["']${fontUrlPattern.source}["'][^>]*>`))?.[0];
+  const asyncStylesheet = html.match(new RegExp(`<link\\b(?=[^>]*\\brel=["']stylesheet["'])(?=[^>]*\\bmedia=["']print["'])(?=[^>]*\\bonload=)[^>]*\\bhref=["']${fontUrlPattern.source}["'][^>]*>`))?.[0];
+  const noScript = html.match(/<noscript>([\s\S]*?)<\/noscript>/)?.[1] ?? "";
+  const scriptEnabledHtml = html.replace(/<noscript>[\s\S]*?<\/noscript>/g, "");
+  const fontStylesheets = [...scriptEnabledHtml.matchAll(new RegExp(`<link\\b(?=[^>]*\\brel=["']stylesheet["'])[^>]*\\bhref=["']${fontUrlPattern.source}["'][^>]*>`, "g"))].map(([link]) => link);
+
+  assert.ok(preload, "font CSS is preloaded without blocking render");
+  assert.ok(asyncStylesheet, "font CSS promotes to a stylesheet after loading");
+  assert.equal(fontStylesheets.length, 1);
+  assert.match(fontStylesheets[0], /\bmedia=["']print["']/);
+  assert.match(noScript, new RegExp(`<link\\b(?=[^>]*\\brel=["']stylesheet["'])[^>]*\\bhref=["']${fontUrlPattern.source}["'][^>]*>`));
 });
 
 test("campaign keeps safe content slots hidden until a known focus is resolved", () => {

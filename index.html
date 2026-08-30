@@ -16,7 +16,9 @@
   <link rel="icon" href="assets/symbole-dembs.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" media="print" onload="this.onload=null;this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"></noscript>
   <link rel="stylesheet" href="assets/css/site.css">
   <script type="module" src="assets/js/site.js"></script>
 </head>
@@ -46,9 +48,9 @@
     <section id="journeys" data-reveal data-reveal-index="1">
       <p class="eyebrow">Ton point de départ</p><h2>Tu en es où ?</h2>
       <div class="journey-grid">
-        <a href="#services"><strong>J’ai une idée d’app</strong><span>Cadrer avant de construire</span></a>
-        <a href="#services"><strong>Je construis mais je bloque</strong><span>Débloquer un point précis</span></a>
-        <a href="https://ressources.dembs.fr/guide" target="_blank" rel="noopener"><strong>Je veux passer les stores</strong><span>Éviter les refus et les semaines perdues</span></a>
+        <a href="#services" data-reveal data-reveal-index="0"><strong>J’ai une idée d’app</strong><span>Cadrer avant de construire</span></a>
+        <a href="#services" data-reveal data-reveal-index="1"><strong>Je construis mais je bloque</strong><span>Débloquer un point précis</span></a>
+        <a href="https://ressources.dembs.fr/guide" target="_blank" rel="noopener" data-reveal data-reveal-index="2"><strong>Je veux passer les stores</strong><span>Éviter les refus et les semaines perdues</span></a>
       </div>
     </section>
 
@@ -56,6 +58,7 @@
       <p class="eyebrow">La preuve par les produits</p><h2>Les apps</h2>
       <p>Le code et les stores, je ne les connais pas qu’en théorie.</p>
       <p class="developer-path">Formé au développement · Première app créée sans IA · 4 apps au compteur</p>
+      <div class="app-carousel-controls"><button class="carousel-toggle" type="button" data-carousel-toggle aria-pressed="false" hidden>Pause</button></div>
       <div id="app-rail" class="app-rail" aria-label="Choisir une application">
         <button type="button" data-app-id="streetpark" aria-current="true"><img src="assets/icons/streetpark.png" alt="StreetPark" width="68" height="68"></button>
         <button type="button" data-app-id="civi" aria-current="false"><img src="assets/icons/civi.png" alt="Civi" width="68" height="68"></button>
@@ -74,9 +77,9 @@
     <section id="services" data-reveal data-reveal-index="3">
       <p class="eyebrow">Accompagnements</p><h2>Un format pour avancer</h2>
       <div class="card-grid">
-        <article><p>45 minutes</p><h3>Appel de cadrage</h3><p>Clarifier l’idée, le périmètre et la prochaine étape.</p><a href="https://cal.com/dembs/cadrage-app" target="_blank" rel="noopener">Réserver un créneau</a></article>
-        <article><p>Accompagnement</p><h3>De l’idée jusqu’aux stores</h3><p>Un suivi personnalisé pour construire et publier ton application.</p><a href="https://cal.com/dembs/cadrage-app" target="_blank" rel="noopener">Parler de mon projet</a></article>
-        <aside><h3>Montage vidéo accéléré par l’IA</h3><p>En préparation</p></aside>
+        <article data-reveal data-reveal-index="0"><p>45 minutes</p><h3>Appel de cadrage</h3><p>Clarifier l’idée, le périmètre et la prochaine étape.</p><a href="https://cal.com/dembs/cadrage-app" target="_blank" rel="noopener">Réserver un créneau</a></article>
+        <article data-reveal data-reveal-index="1"><p>Accompagnement</p><h3>De l’idée jusqu’aux stores</h3><p>Un suivi personnalisé pour construire et publier ton application.</p><a href="https://cal.com/dembs/cadrage-app" target="_blank" rel="noopener">Parler de mon projet</a></article>
+        <aside data-reveal data-reveal-index="2"><h3>Montage vidéo accéléré par l’IA</h3><p>En préparation</p></aside>
       </div>
     </section>
 
