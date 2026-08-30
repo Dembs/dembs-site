@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
 test("homepage contains the validated positioning and section contracts", () => {
+  assert.doesNotMatch(html, /<section class="hero"[^>]*\bdata-reveal\b/);
   assert.match(html, /Développeur d’applications/);
   assert.match(html, /Je crée des apps\. Et je les mène jusqu’aux stores\./);
   assert.match(html, /Je partage le processus et j’accompagne ceux qui veulent lancer la leur\./);
