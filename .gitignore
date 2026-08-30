@@ -10,3 +10,6 @@ Thumbs.db
 
 # maquettes temporaires du compagnon de brainstorming
 .superpowers/
+
+# branches de travail isolees
+.worktrees/
