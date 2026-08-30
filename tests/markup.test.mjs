@@ -14,6 +14,12 @@ test("homepage contains the validated positioning and section contracts", () => 
   }
 });
 
+test("homepage reveal groups declare capped stagger indices", () => {
+  const revealTags = [...html.matchAll(/<(?:aside|section|footer)\b[^>]*\bdata-reveal\b[^>]*>/g)].map(([tag]) => tag);
+  const revealIndices = revealTags.map((tag) => Number(tag.match(/\bdata-reveal-index="(\d+)"/)?.[1]));
+  assert.deepEqual(revealIndices, [0, 1, 2, 3, 4, 5, 6]);
+});
+
 test("homepage preserves required external destinations", () => {
   for (const destination of [
     "https://ressources.dembs.fr/guide",
