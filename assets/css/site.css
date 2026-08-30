@@ -13,6 +13,7 @@
   --page-pad: clamp(1rem, 5vw, 4rem);
   --content: 68rem;
   --bar-height: 5.5rem;
+  --header-h: 4.25rem;
 }
 
 * { box-sizing: border-box; }
@@ -31,40 +32,45 @@ button { font: inherit; }
 
 /* The header lets the page pass behind it, blurred. The seam is a hairline, and
    the blur fades out below it so there is no hard edge to catch the eye. */
-.site-header { position: sticky; z-index: 10; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 4rem; padding: .75rem var(--page-pad); background: rgb(255 255 255 / .7); background: color-mix(in srgb, var(--ground) 70%, transparent); border-bottom: 1px solid rgb(16 35 63 / .06); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); }
+.site-header { position: sticky; z-index: 13; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: var(--header-h); padding: .75rem var(--page-pad); background: rgb(255 255 255 / .7); background: color-mix(in srgb, var(--ground) 70%, transparent); border-bottom: 1px solid rgb(16 35 63 / .06); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); }
 .site-header::after { content: ""; position: absolute; top: 100%; right: 0; left: 0; height: 1.75rem; -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); mask-image: linear-gradient(to bottom, #000, transparent); pointer-events: none; }
 .brand { display: inline-flex; align-items: center; min-height: 2.75rem; gap: .5rem; color: var(--ink); font: 700 1.3125rem/1 var(--display); letter-spacing: -.05em; text-decoration: none; }
 .brand img { width: 1.75rem; height: 1.375rem; }
 .menu-toggle { display: inline-grid; width: 2.75rem; min-width: 2.75rem; min-height: 2.75rem; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--ground); color: var(--ink); cursor: pointer; }
 .menu-toggle[aria-expanded="true"] { border-color: var(--cobalt); background: var(--mist); color: var(--cobalt); }
-/* Two bars that cross into an X, so the button states its own action. */
-.menu-icon { position: relative; display: block; width: 1.125rem; height: .625rem; }
-.menu-icon span { position: absolute; left: 0; width: 100%; height: 2px; border-radius: 2px; background: currentColor; transition: top 180ms ease, transform 260ms cubic-bezier(.2, .8, .3, 1); }
-.menu-icon span:first-child { top: 0; }
-.menu-icon span:last-child { top: calc(100% - 2px); }
+/* Three bars: the middle one dissolves while the outer two cross into an X. */
+.menu-icon { position: relative; display: block; width: 1.125rem; height: .75rem; }
+.menu-icon span { position: absolute; left: 0; width: 100%; height: 2px; border-radius: 2px; background: currentColor; transition: top 220ms cubic-bezier(.22, .61, .36, 1), transform 320ms cubic-bezier(.22, .61, .36, 1), opacity 160ms linear; }
+.menu-icon span:nth-child(1) { top: 0; }
+.menu-icon span:nth-child(2) { top: calc(50% - 1px); }
+.menu-icon span:nth-child(3) { top: calc(100% - 2px); }
 .menu-toggle[aria-expanded="true"] .menu-icon span { top: calc(50% - 1px); }
-.menu-toggle[aria-expanded="true"] .menu-icon span:first-child { transform: rotate(45deg); }
-.menu-toggle[aria-expanded="true"] .menu-icon span:last-child { transform: rotate(-45deg); }
+.menu-toggle[aria-expanded="true"] .menu-icon span:nth-child(1) { transform: rotate(45deg); }
+.menu-toggle[aria-expanded="true"] .menu-icon span:nth-child(2) { opacity: 0; transform: scaleX(.4); }
+.menu-toggle[aria-expanded="true"] .menu-icon span:nth-child(3) { transform: rotate(-45deg); }
 
-.menu-scrim { position: fixed; z-index: 11; inset: 0; background: rgb(16 35 63 / .28); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
-.menu-panel { position: fixed; z-index: 12; top: 4.25rem; right: var(--page-pad); left: var(--page-pad); display: grid; gap: .25rem; padding: .75rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--ground); box-shadow: 0 1.25rem 3rem rgb(16 35 63 / .15); transform-origin: top right; }
-.menu-panel a { min-height: 3rem; display: flex; align-items: center; padding: .5rem .75rem; border-radius: .5rem; font-weight: 600; text-decoration: none; }
-.menu-panel a:hover { background: var(--mist); color: var(--cobalt); }
-.menu-panel .menu-cta { justify-content: center; margin-top: .375rem; padding: .875rem 1rem; border-radius: .75rem; background: var(--cobalt); color: var(--ground); }
-.menu-panel .menu-cta:hover { background: var(--cobalt-deep); color: var(--ground); }
+/* A full-height sheet, not a dropdown card. The veil dissolves the page while the
+   rows drift up into place, so the two states cross-fade instead of popping. */
+.menu-scrim { position: fixed; z-index: 11; inset: 0; background: var(--ground); }
+.menu-panel { position: fixed; z-index: 12; inset: var(--header-h) 0 0; display: flex; flex-direction: column; padding: 1.75rem var(--page-pad) calc(2rem + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+.menu-panel a { text-decoration: none; }
+.menu-panel a:not(.menu-cta) { display: grid; grid-template-columns: 1fr 1.25rem; align-items: center; column-gap: .75rem; min-height: 3.875rem; padding: .5rem 0; border-bottom: 1px solid var(--line); font: 700 1.375rem/1.25 var(--display); letter-spacing: -.035em; }
+.menu-panel a:not(.menu-cta)::after { content: ""; justify-self: center; width: .5rem; height: .5rem; border-top: 2px solid var(--cobalt); border-right: 2px solid var(--cobalt); transform: rotate(45deg); }
+.menu-panel a:not(.menu-cta):hover { color: var(--cobalt); }
+.menu-panel .menu-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 3.375rem; margin-top: auto; padding: .875rem 1.25rem; border-radius: 999px; background: var(--cobalt); color: var(--ground); font-weight: 600; font-size: 1.0625rem; }
+.menu-panel .menu-cta:hover { background: var(--cobalt-deep); }
 
-/* The panel and its rows ease in on open. Delays stay short so nothing waits long. */
-@keyframes menu-panel-in { from { opacity: 0; transform: translateY(-.5rem) scale(.98); } }
-@keyframes menu-row-in { from { opacity: 0; transform: translateY(-.375rem); } }
-@keyframes menu-scrim-in { from { opacity: 0; } }
-.menu-panel:not([hidden]) { animation: menu-panel-in 200ms cubic-bezier(.2, .8, .3, 1) both; }
-.menu-panel:not([hidden]) > a { animation: menu-row-in 240ms ease-out both; }
-.menu-panel:not([hidden]) > a:nth-child(1) { animation-delay: 40ms; }
-.menu-panel:not([hidden]) > a:nth-child(2) { animation-delay: 70ms; }
-.menu-panel:not([hidden]) > a:nth-child(3) { animation-delay: 100ms; }
-.menu-panel:not([hidden]) > a:nth-child(4) { animation-delay: 130ms; }
-.menu-panel:not([hidden]) > a:nth-child(5) { animation-delay: 160ms; }
-.menu-scrim:not([hidden]) { animation: menu-scrim-in 200ms ease-out both; }
+@keyframes menu-veil-in { from { opacity: 0; } }
+@keyframes menu-row-in { from { opacity: 0; transform: translateY(.625rem); } }
+.menu-scrim:not([hidden]) { animation: menu-veil-in 300ms ease both; }
+/* Long durations, short offsets: the rows overlap heavily so the sequence reads
+   as one movement rather than items arriving one by one. */
+.menu-panel:not([hidden]) > a { animation: menu-row-in 460ms cubic-bezier(.22, .61, .36, 1) both; }
+.menu-panel:not([hidden]) > a:nth-child(1) { animation-delay: 50ms; }
+.menu-panel:not([hidden]) > a:nth-child(2) { animation-delay: 85ms; }
+.menu-panel:not([hidden]) > a:nth-child(3) { animation-delay: 120ms; }
+.menu-panel:not([hidden]) > a:nth-child(4) { animation-delay: 155ms; }
+.menu-panel:not([hidden]) > a:nth-child(5) { animation-delay: 190ms; }
 
 main, footer { width: min(100%, calc(var(--content) + var(--page-pad) * 2)); margin-inline: auto; }
 section { padding: clamp(2.75rem, 8vw, 5rem) var(--page-pad); }
@@ -166,7 +172,12 @@ footer p { margin-bottom: 0; font: 700 clamp(1.5rem, 5vw, 2rem)/1.15 var(--displ
   body { padding-bottom: 0; }
   .action-bar { display: none; }
   .site-header { padding-inline: max(var(--page-pad), calc((100vw - var(--content)) / 2)); }
-  .menu-panel { top: 1rem; right: max(var(--page-pad), calc((100vw - var(--content)) / 2)); left: auto; width: 18rem; }
+  /* A full sheet is right on a phone; on a wide screen four links want a card. */
+  .menu-scrim { background: rgb(16 35 63 / .28); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+  .menu-panel { inset: auto; top: calc(var(--header-h) + .5rem); right: max(var(--page-pad), calc((100vw - var(--content)) / 2)); bottom: auto; left: auto; width: 20rem; padding: .75rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--ground); box-shadow: 0 1.25rem 3rem rgb(16 35 63 / .15); }
+  .menu-panel a:not(.menu-cta) { min-height: 3rem; padding: .5rem .75rem; border-bottom: 0; border-radius: .5rem; font: 600 1rem/1.3 var(--body); letter-spacing: 0; }
+  .menu-panel a:not(.menu-cta):hover { background: var(--mist); color: var(--cobalt); }
+  .menu-panel .menu-cta { margin-top: .5rem; border-radius: .75rem; font-size: 1rem; }
   .hero-actions { grid-auto-flow: column; justify-content: start; }
   .journey-list { grid-template-columns: repeat(3, 1fr); }
   .journey-list a { border-right: 1px solid var(--line); border-bottom: 0; }

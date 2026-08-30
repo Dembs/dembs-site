@@ -112,15 +112,16 @@ test("nothing that leads to the paid call is advertised as free", () => {
   for (const block of blocks) {
     assert.doesNotMatch(block, /gratuit/i, block.slice(0, 120));
   }
-  assert.match(html, /45 min · 39 €/);
-  assert.match(html, /Appel de cadrage · 45 min · 39 €/);
+  // The price is stated where the offer is described; the bar just names the format.
+  assert.match(html, /<p class="meta">45 min · 39 €<\/p>/);
+  assert.match(html, /<span>Appel de cadrage · 45 min<\/span>/);
 });
 
 test("the menu carries the booking action and a labelled toggle icon", () => {
   const menu = html.match(/<nav id="site-menu"[\s\S]*?<\/nav>/)?.[0] ?? "";
   assert.match(menu, /class="menu-cta"[^>]*href="https:\/\/cal\.com\/dembs\/cadrage-app"/);
-  // Two bars that CSS crosses into an X, rather than a bare glyph.
-  assert.match(html, /<span class="menu-icon" aria-hidden="true"><span><\/span><span><\/span><\/span>/);
+  // Three bars that CSS crosses into an X, rather than a bare glyph.
+  assert.match(html, /<span class="menu-icon" aria-hidden="true"><span><\/span><span><\/span><span><\/span><\/span>/);
   assert.doesNotMatch(html, /☰/);
 });
 
