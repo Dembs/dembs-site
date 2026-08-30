@@ -9,6 +9,26 @@ export function wrapLoopPosition(position, loopWidth) {
   return ((position % loopWidth) + loopWidth) % loopWidth;
 }
 
+export function revealDelay(index) {
+  return Math.min(Math.max(index, 0), 4) * 70;
+}
+
+export function initReveals(root = document) {
+  const items = [...root.querySelectorAll("[data-reveal]")];
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!items.length || reduced || !("IntersectionObserver" in window)) return;
+  root.documentElement.classList.add("reveal-enabled");
+  items.forEach((item) => item.style.setProperty("--reveal-delay", `${revealDelay(Number(item.dataset.revealIndex || 0))}ms`));
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      entry.target.classList.add("is-visible");
+      observer.unobserve(entry.target);
+    }
+  }, { threshold: 0.12, rootMargin: "0px 0px -8%" });
+  items.forEach((item) => observer.observe(item));
+}
+
 export function selectApp(id, root = document) {
   const app = APPS.find((item) => item.id === id);
   const detail = root.querySelector("#app-detail");
@@ -238,4 +258,5 @@ if (typeof document !== "undefined") {
   initMenu();
   renderFocusCampaign();
   initCarousel();
+  initReveals();
 }

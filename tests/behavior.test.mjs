@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { initCarousel, isTapGesture, selectApp, wrapLoopPosition } from "../assets/js/site.js";
+import { initCarousel, initReveals, isTapGesture, revealDelay, selectApp, wrapLoopPosition } from "../assets/js/site.js";
 
 const css = await readFile(new URL("../assets/css/site.css", import.meta.url), "utf8");
 
@@ -99,6 +99,23 @@ function makeCarouselRoot(reducedMotion = true) {
   };
 }
 
+function makeRevealRoot() {
+  const items = [2, 9].map((revealIndex) => {
+    const properties = new Map();
+    return {
+      dataset: { revealIndex: String(revealIndex) },
+      classList: makeClassList(),
+      style: { setProperty: (name, value) => properties.set(name, value) },
+      properties
+    };
+  });
+  return {
+    documentElement: { classList: makeClassList() },
+    items,
+    querySelectorAll: (selector) => selector === "[data-reveal]" ? items : []
+  };
+}
+
 test("tap detection separates a touch from a drag", () => {
   assert.equal(isTapGesture({ x: 10, y: 10 }, { x: 16, y: 15 }), true);
   assert.equal(isTapGesture({ x: 10, y: 10 }, { x: 25, y: 10 }), false);
@@ -108,6 +125,60 @@ test("loop position remains inside one repeated app set", () => {
   assert.equal(wrapLoopPosition(410, 400), 10);
   assert.equal(wrapLoopPosition(-10, 400), 390);
   assert.equal(wrapLoopPosition(25, 0), 0);
+});
+
+test("reveal staggering is capped to keep the page responsive", () => {
+  assert.equal(revealDelay(0), 0);
+  assert.equal(revealDelay(2), 140);
+  assert.equal(revealDelay(9), 280);
+});
+
+test("reveals assign capped delays and become visible only once observed", () => {
+  const root = makeRevealRoot();
+  const previousWindow = globalThis.window;
+  const previousMatchMedia = globalThis.matchMedia;
+  const previousIntersectionObserver = globalThis.IntersectionObserver;
+  let observer;
+  globalThis.window = globalThis;
+  globalThis.matchMedia = () => ({ matches: false });
+  globalThis.IntersectionObserver = class {
+    constructor(callback) { this.callback = callback; observer = this; }
+    observe(item) { (this.items ??= []).push(item); }
+    unobserve(item) { (this.unobserved ??= []).push(item); }
+  };
+  try {
+    initReveals(root);
+    assert.equal(root.documentElement.classList.contains("reveal-enabled"), true);
+    assert.equal(root.items[0].properties.get("--reveal-delay"), "140ms");
+    assert.equal(root.items[1].properties.get("--reveal-delay"), "280ms");
+    observer.callback([{ isIntersecting: true, target: root.items[0] }]);
+    assert.equal(root.items[0].classList.contains("is-visible"), true);
+    assert.deepEqual(observer.unobserved, [root.items[0]]);
+  } finally {
+    globalThis.window = previousWindow;
+    globalThis.matchMedia = previousMatchMedia;
+    globalThis.IntersectionObserver = previousIntersectionObserver;
+  }
+});
+
+test("reduced motion leaves reveal content immediately available", () => {
+  const root = makeRevealRoot();
+  const previousWindow = globalThis.window;
+  const previousMatchMedia = globalThis.matchMedia;
+  const previousIntersectionObserver = globalThis.IntersectionObserver;
+  let observers = 0;
+  globalThis.window = globalThis;
+  globalThis.matchMedia = () => ({ matches: true });
+  globalThis.IntersectionObserver = class { constructor() { observers += 1; } };
+  try {
+    initReveals(root);
+    assert.equal(root.documentElement.classList.contains("reveal-enabled"), false);
+    assert.equal(observers, 0);
+  } finally {
+    globalThis.window = previousWindow;
+    globalThis.matchMedia = previousMatchMedia;
+    globalThis.IntersectionObserver = previousIntersectionObserver;
+  }
 });
 
 test("app selection reveals store links or an explicit unpublished status", () => {
