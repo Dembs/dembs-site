@@ -94,6 +94,7 @@ export function initCarousel(root = document) {
   rail.addEventListener("pointerdown", (event) => {
     pointerStart = { x: event.clientX, y: event.clientY };
     pointerEnd = pointerStart;
+    rail.setPointerCapture?.(event.pointerId);
     pause("pointer");
   });
   rail.addEventListener("pointermove", (event) => {
@@ -103,11 +104,13 @@ export function initCarousel(root = document) {
   rail.addEventListener("pointerup", (event) => {
     pointerEnd = { x: event.clientX, y: event.clientY };
     position = wrapLoopPosition(rail.scrollLeft, loopWidth);
+    if (rail.hasPointerCapture?.(event.pointerId)) rail.releasePointerCapture(event.pointerId);
     resumeAfter("pointer");
   });
-  rail.addEventListener("pointercancel", () => {
+  rail.addEventListener("pointercancel", (event) => {
     pointerStart = undefined;
     pointerEnd = undefined;
+    if (rail.hasPointerCapture?.(event.pointerId)) rail.releasePointerCapture(event.pointerId);
     resumeAfter("pointer");
   });
   rail.addEventListener("touchstart", (event) => {

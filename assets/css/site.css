@@ -44,7 +44,7 @@ h1, h2, h3 { font-family: var(--display); line-height: 1.04; letter-spacing: -.0
 h1 { max-width: 15ch; margin-bottom: 1.5rem; font-size: clamp(3rem, 10vw, 6.4rem); }
 h2 { margin-bottom: 1rem; font-size: clamp(2.15rem, 6vw, 4rem); }
 h3 { margin-bottom: .75rem; font-size: 1.55rem; }
-.eyebrow, .developer-path, .card-grid article > p:first-child, .resource-card > p:first-child, .app-detail [data-app-tag] { color: var(--slate); font: 500 .72rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.eyebrow, .developer-path, .card-grid article > p:first-child, .resource-card > p:first-child { color: var(--slate); font: 500 .72rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .eyebrow { margin-bottom: 1rem; color: var(--cobalt); }
 
 .hero { padding-top: clamp(4.5rem, 12vw, 9rem); padding-bottom: clamp(4.5rem, 12vw, 9rem); background: linear-gradient(135deg, var(--cloud) 12%, var(--mist) 100%); }
@@ -79,10 +79,12 @@ h3 { margin-bottom: .75rem; font-size: 1.55rem; }
 .app-detail > img { grid-row: span 2; width: 3.5rem; height: 3.5rem; border-radius: .85rem; }
 .app-detail > img.pixel { image-rendering: pixelated; }
 .app-detail-heading h3, .app-detail-heading p { margin: 0; }
+.app-detail [data-app-tag] { font: 500 .72rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .app-detail > [data-app-description], .app-detail > [data-app-stores], .app-detail > [data-app-status] { grid-column: 1 / -1; margin: .5rem 0 0; }
 .app-detail [data-app-stores] { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .app-detail [data-app-stores] a { justify-content: center; padding: .65rem .5rem; border-radius: .55rem; background: var(--ink); color: var(--white); text-decoration: none; text-align: center; }
-.app-detail [data-app-status] { color: var(--slate); font: 500 .8rem/1.4 var(--mono); }
+.app-detail [data-app-status] { font: 500 .8rem/1.4 var(--mono); }
+.app-detail [data-app-tag], .app-detail [data-app-status] { color: inherit; }
 .app-detail.is-entering { animation: detail-in 280ms ease-out both; }
 .app-detail.is-entering .store-link, .app-detail.is-entering [data-app-stores] a { animation: store-in 280ms ease-out both; }
 .app-detail.is-entering .store-link:nth-child(2), .app-detail.is-entering [data-app-stores] a:nth-child(2) { animation-delay: 70ms; }

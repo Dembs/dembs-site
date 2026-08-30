@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { initCarousel, isTapGesture, selectApp, wrapLoopPosition } from "../assets/js/site.js";
+
+const css = await readFile(new URL("../assets/css/site.css", import.meta.url), "utf8");
 
 function makeClassList(initial = []) {
   const values = new Set(initial);
@@ -55,6 +58,7 @@ function makeCarouselRoot(reducedMotion = true) {
     setAttribute(name, value) { this.attributes.set(name, value); }
   });
   const rail = {
+    capturedPointers: new Set(),
     children: ["streetpark", "civi", "last-rep", "bascule"].map(makeButton),
     clientWidth: 300,
     scrollLeft: 0,
@@ -63,7 +67,10 @@ function makeCarouselRoot(reducedMotion = true) {
       this.children.push(child);
       Object.defineProperty(child, "offsetLeft", { get: () => this.children.indexOf(child) * 100 });
     },
-    addEventListener(type, listener) { listeners.set(type, listener); }
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    hasPointerCapture(pointerId) { return this.capturedPointers.has(pointerId); },
+    releasePointerCapture(pointerId) { this.capturedPointers.delete(pointerId); },
+    setPointerCapture(pointerId) { this.capturedPointers.add(pointerId); }
   };
   rail.children.forEach((button, index) => {
     Object.defineProperty(button, "offsetLeft", { get: () => rail.children.indexOf(button) * 100 });
@@ -203,4 +210,35 @@ test("carousel pauses on mouse hover and resumes after the delay", () => {
   root.view.timeoutCallbacks.at(-1)();
   root.view.animationFrameCallbacks.shift()(3000);
   assert.equal(root.rail.scrollLeft, 60);
+});
+
+test("pointer capture recovers after an outside release without bypassing other pause reasons", () => {
+  const root = makeCarouselRoot(false);
+  initCarousel(root);
+
+  root.view.animationFrameCallbacks.shift()(0);
+  root.view.animationFrameCallbacks.shift()(1000);
+  assert.equal(root.rail.scrollLeft, 30);
+
+  root.listeners.get("mouseenter")();
+  root.listeners.get("pointerdown")({ clientX: 20, clientY: 20, pointerId: 7 });
+  assert.equal(root.rail.hasPointerCapture(7), true);
+
+  root.listeners.get("mouseleave")();
+  root.view.timeoutCallbacks.at(-1)();
+  root.view.animationFrameCallbacks.shift()(2000);
+  assert.equal(root.rail.scrollLeft, 30, "pointer pause remains after hover ends");
+
+  root.listeners.get("pointerup")({ clientX: 120, clientY: 20, pointerId: 7 });
+  assert.equal(root.rail.hasPointerCapture(7), false);
+  root.view.timeoutCallbacks.at(-1)();
+  root.view.animationFrameCallbacks.shift()(3000);
+  assert.equal(root.rail.scrollLeft, 60, "outside release resumes after the delay");
+});
+
+test("per-app tag and status text inherit the readable foreground color", () => {
+  assert.match(
+    css,
+    /\.app-detail \[data-app-tag\],\s*\.app-detail \[data-app-status\]\s*\{\s*color:\s*inherit;/
+  );
 });
