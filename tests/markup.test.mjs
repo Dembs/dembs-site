@@ -29,3 +29,16 @@ test("interactive controls expose accessible state", () => {
   assert.match(html, /aria-live=["']polite["']/);
   assert.match(html, /href=["']mentions-legales\.html["']/);
 });
+
+test("campaign keeps safe content slots hidden until a known focus is resolved", () => {
+  const campaign = html.match(/<aside id=["']campaign["'][\s\S]*?<\/aside>/)?.[0];
+  assert.ok(campaign, "campaign container");
+  for (const slot of [
+    "data-campaign-eyebrow",
+    "data-campaign-title",
+    "data-campaign-description",
+    "data-campaign-link",
+    "data-campaign-affiliate"
+  ]) assert.match(campaign, new RegExp(slot));
+  assert.match(campaign, /data-campaign-affiliate hidden/);
+});

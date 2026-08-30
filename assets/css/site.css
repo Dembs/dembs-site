@@ -16,6 +16,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body { margin: 0; color: var(--ink); background: var(--cloud); font-family: var(--body); font-size: 1rem; line-height: 1.55; }
+body.menu-open { overflow: hidden; }
 img { display: block; max-width: 100%; }
 a { color: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -30,6 +31,7 @@ button { font: inherit; }
 .brand { display: inline-flex; align-items: center; min-height: 2.75rem; gap: .5rem; color: var(--ink); font: 700 1.25rem/1 var(--display); letter-spacing: -.06em; text-decoration: none; }
 .brand img { width: 1.75rem; height: 1.375rem; }
 .menu-toggle { display: inline-grid; width: 2.75rem; min-width: 2.75rem; min-height: 2.75rem; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--white); color: var(--ink); cursor: pointer; font-size: 1.2rem; }
+.menu-toggle[aria-expanded="true"] { border-color: var(--cobalt); background: var(--mist); color: var(--cobalt); }
 .menu-scrim { position: fixed; z-index: 11; inset: 0; background: rgb(16 35 63 / .28); }
 .menu-panel { position: fixed; z-index: 12; top: 4.75rem; right: var(--page-pad); left: var(--page-pad); display: grid; gap: .25rem; padding: .75rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--white); box-shadow: 0 1.25rem 3rem rgb(16 35 63 / .15); }
 .menu-panel a { min-height: 2.75rem; display: flex; align-items: center; padding: .5rem .75rem; border-radius: .5rem; font-weight: 600; text-decoration: none; }
