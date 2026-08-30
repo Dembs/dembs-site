@@ -5,11 +5,21 @@ directement le contenu a mettre a la racine web.
 
 ## Contenu
 
-    index.html          la page (HTML + CSS + JS inline)
+    index.html                 structure et contenu essentiel de la page
+    assets/css/site.css        styles mobile-first, composants et animations
+    assets/js/content.js       donnees des applications et campagnes TikTok
+    assets/js/site.js          menu, campagne, carrousel et revelations au defilement
+    assets/icons/              les 4 icones d'apps, 256x256
+    assets/symbole-dembs.svg   symbole de marque et favicon
+    tests/                     contrats de contenu, de balisage et de comportement
     mentions-legales.html
-    assets/icons/       les 4 icones d'apps, 256x256
+    CNAME
     robots.txt
     sitemap.xml
+
+Le site reste statique, sans dependance d'execution ni etape de build. Les contenus
+d'applications et de campagnes se configurent dans `assets/js/content.js`; le HTML
+conserve le contenu essentiel utilise lorsque JavaScript n'est pas disponible.
 
 ## Deploiement
 
@@ -46,6 +56,18 @@ l'enregistrement A de `ressources.dembs.fr` qui sert le guide.
 
 puis http://127.0.0.1:8777/ . Ne pas ouvrir le fichier en `file://`, le rendu differe.
 
+Lancer aussi la suite de verification avant de pousser :
+
+    npm test
+
+## Mettre un contenu TikTok en avant
+
+1. Ajouter une entrée complète dans `CAMPAIGNS` dans `assets/js/content.js`.
+2. Tester `http://127.0.0.1:8777/?focus=<identifiant>`.
+3. Placer `https://dembs.fr/?focus=<identifiant>` dans la bio.
+4. Signaler `affiliate: true` pour tout lien affilié.
+5. Supprimer ou désactiver l’entrée lorsque la campagne n’est plus utilisée.
+
 ## A finir
 
 - Creer la boite mail contact@dembs.fr dans l'espace OVH : elle est publiee dans les
@@ -53,5 +75,5 @@ puis http://127.0.0.1:8777/ . Ne pas ouvrir le fichier en `file://`, le rendu di
 - Mentions legales, ligne TVA : decommenter la mention de franchise en base (article 293 B)
   ou la remplacer par le numero de TVA intracommunautaire.
 - Passer l'evenement cal.com de 30 a 45 minutes, la page affiche 45 min.
-- Section « Ce que j'utilise » : ecrite mais commentee dans `index.html`, a reactiver
-  quand un partenariat sera signe. Aucune mention de Wayhost.
+- Recommandations : la section reste masquee tant qu'aucun contenu approuve et aucune
+  destination reelle ne sont fournis par la configuration. Aucune mention de Wayhost.
