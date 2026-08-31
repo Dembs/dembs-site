@@ -30,7 +30,7 @@ test("journey and service cards reset their reveal stagger within each group", (
   const journeyGroup = html.match(/<div class="journey-list">([\s\S]*?)<\/div>/)?.[1] ?? "";
   const serviceGroup = html.match(/<div class="card-grid">([\s\S]*?)<\/div>/)?.[1] ?? "";
   const journeyIndices = [...journeyGroup.matchAll(/<a\b[^>]*\bdata-reveal-index="(\d+)"[^>]*>/g)].map((match) => Number(match[1]));
-  const serviceIndices = [...serviceGroup.matchAll(/<(?:article|aside)\b[^>]*\bdata-reveal-index="(\d+)"[^>]*>/g)].map((match) => Number(match[1]));
+  const serviceIndices = [...serviceGroup.matchAll(/<(?:article|aside|a)\b[^>]*\bdata-reveal-index="(\d+)"[^>]*>/g)].map((match) => Number(match[1]));
 
   assert.deepEqual(journeyIndices, [0, 1, 2]);
   assert.deepEqual(serviceIndices, [0, 1, 2]);
@@ -125,10 +125,24 @@ test("the menu carries the booking action and a labelled toggle icon", () => {
   assert.doesNotMatch(html, /☰/);
 });
 
-test("the upcoming service reads as a card, not a stray bullet", () => {
-  const soon = html.match(/<aside class="soon"[\s\S]*?<\/aside>/)?.[0] ?? "";
-  assert.ok(soon, "upcoming service card");
-  assert.match(soon, /<p class="meta">Bientôt<\/p>/);
+test("the upcoming service links to the Motion Stack waiting list", () => {
+  const soon = html.match(/<a class="soon"[\s\S]*?<\/a>/)?.[0] ?? "";
+  assert.ok(soon, "Motion Stack service card");
+  assert.match(soon, /href="https:\/\/ressources\.dembs\.fr\/motion-stack"/);
+  assert.match(soon, /<p class="meta">Liste d’attente ouverte<\/p>/);
   assert.match(soon, /<h3>Montage vidéo accéléré par l’IA<\/h3>/);
+  assert.match(soon, /Découvrir Motion Stack/);
+  assert.match(soon, /data-motion-mascot/);
+  assert.match(soon, /class="motion-mascot-stage" aria-hidden="true"/);
+  assert.match(soon, /data-motion-face/);
+  assert.match(soon, /class="motion-freddy-body"/);
+  assert.match(soon, /class="motion-wave"/);
+  assert.match(soon, /class="motion-spark"/);
+  assert.match(soon, /class="motion-frame"/);
+  assert.match(soon, /class="motion-clapper"/);
+  assert.match(soon, /class="motion-clapper-slate"/);
+  assert.doesNotMatch(soon, /motion-(?:scissors|cut-line)/);
+  assert.doesNotMatch(soon, /motion-(?:timeline|track|playhead)/);
+  assert.doesNotMatch(soon, /motion-(?:leg|shoe|torso|arm|cap|mouth)/);
   assert.doesNotMatch(html, /class="note"/);
 });

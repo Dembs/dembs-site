@@ -141,10 +141,57 @@ h3 { margin-bottom: .5rem; font-size: 1.5rem; line-height: 1.15; }
 .card-grid { display: grid; gap: .875rem; }
 .card-grid article { display: flex; flex-direction: column; align-items: stretch; padding: 1.375rem 1.25rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--ground); }
 .card-grid article > p:not(.meta) { flex: 1; margin-bottom: 1.125rem; color: var(--slate); font-size: 1rem; }
-/* Not yet bookable, so it reads as a card in outline rather than a solid offer. */
-.card-grid .soon { display: flex; flex-direction: column; align-items: stretch; padding: 1.375rem 1.25rem; border: 1.5px dashed color-mix(in srgb, var(--cobalt) 32%, var(--line)); border-radius: 1rem; background: color-mix(in srgb, var(--mist) 24%, transparent); }
-.card-grid .soon .meta { color: var(--cobalt); }
-.card-grid .soon p:not(.meta) { margin: 0; color: var(--slate); font-size: 1rem; }
+/* Motion Stack is a small portal into its own visual language, recoloured to
+   belong on dembs.fr rather than looking like an unrelated dark advert. */
+.card-grid .soon { --gaze-x: 0px; --gaze-y: 0px; position: relative; display: grid; min-height: 29rem; overflow: hidden; padding: 1.5rem 1.25rem 14rem; border: 1.5px solid color-mix(in srgb, var(--cobalt) 36%, var(--line)); border-radius: 1.25rem; background: linear-gradient(145deg, var(--ground) 0 48%, color-mix(in srgb, var(--mist) 58%, var(--ground)) 100%); color: inherit; text-decoration: none; isolation: isolate; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+.card-grid .soon::before { position: absolute; z-index: -1; right: -4rem; bottom: -5rem; width: 17rem; height: 17rem; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--cobalt) 16%, transparent), transparent 68%); content: ""; }
+.card-grid .soon-copy { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; }
+.card-grid .soon .meta { margin-bottom: .65rem; color: var(--cobalt); }
+.card-grid .soon h3 { max-width: 15ch; font-size: clamp(1.7rem, 6vw, 2.35rem); }
+.card-grid .soon-description { max-width: 32rem; margin: 0; color: var(--slate); font-size: 1rem; }
+.card-grid .soon-action { display: inline-flex; align-items: center; min-height: 2.75rem; margin-top: 1.125rem; color: var(--cobalt); font-weight: 700; }
+.card-grid .soon:hover { transform: translateY(-2px); border-color: var(--cobalt); box-shadow: 0 1.1rem 2.5rem rgb(16 35 63 / .12); }
+.card-grid .soon:focus-visible { outline: 3px solid color-mix(in srgb, var(--cobalt) 40%, transparent); outline-offset: 3px; }
+
+.motion-mascot-stage { position: absolute; right: 50%; bottom: .35rem; width: min(18rem, 92%); height: 13.5rem; pointer-events: none; transform: translateX(50%); }
+.motion-mascot { position: absolute; z-index: 2; bottom: .5rem; left: calc(50% - 5.25rem); width: 10.5rem; overflow: visible; animation: mascot-float 5.4s ease-in-out infinite; }
+.motion-shadow { fill: rgb(16 35 63 / .12); }
+.motion-freddy-body { fill: var(--cobalt); transform-box: fill-box; transform-origin: center bottom; animation: mascot-breathe 3.6s ease-in-out infinite; }
+.motion-freddy-eyes { fill: #fff; transform: translate(var(--gaze-x), var(--gaze-y)); transition: transform 90ms linear; }
+.motion-freddy-eye { transform-box: fill-box; transform-origin: center; animation: mascot-blink 5.8s ease-in-out infinite; }
+.motion-freddy-eye-right { animation-delay: 35ms; }
+.motion-chip { position: absolute; z-index: 3; display: inline-grid; min-width: 2.75rem; min-height: 2.2rem; place-items: center; border: 1px solid color-mix(in srgb, var(--cobalt) 38%, var(--line)); border-radius: .7rem; background: rgb(255 255 255 / .9); box-shadow: 0 .5rem 1rem rgb(16 35 63 / .1); color: var(--cobalt); font: 700 .7rem/1 var(--mono); letter-spacing: .08em; }
+.motion-chip-cc { top: 3.25rem; left: .25rem; animation: decor-float-left 5.8s ease-in-out infinite; }
+.motion-chip-fx { top: 1.1rem; right: .35rem; animation: decor-float-right 6.4s ease-in-out -.9s infinite; }
+.motion-frame { position: absolute; z-index: 1; bottom: 1.15rem; left: 50%; width: 11.5rem; height: 9rem; border: 1px solid color-mix(in srgb, var(--cobalt) 30%, transparent); transform: translateX(-50%) rotate(-2deg); }
+.motion-frame::before, .motion-frame::after { position: absolute; width: .45rem; height: .45rem; border: 1.5px solid var(--cobalt); background: var(--ground); content: ""; }
+.motion-frame::before { top: -.3rem; left: -.3rem; }
+.motion-frame::after { right: -.3rem; bottom: -.3rem; }
+.motion-wave { position: absolute; z-index: 3; bottom: 1.5rem; left: .5rem; display: flex; align-items: center; gap: .18rem; height: 2.25rem; padding: .45rem .55rem; border: 1px solid color-mix(in srgb, var(--cobalt) 28%, var(--line)); border-radius: 999px; background: rgb(255 255 255 / .88); box-shadow: 0 .4rem 1rem rgb(16 35 63 / .08); animation: decor-drift 6.8s ease-in-out -2s infinite; }
+.motion-wave i { display: block; width: .16rem; border-radius: 999px; background: var(--cobalt); animation: wave-pulse 1.6s ease-in-out infinite; }
+.motion-wave i:nth-child(1), .motion-wave i:nth-child(5) { height: .45rem; }
+.motion-wave i:nth-child(2), .motion-wave i:nth-child(4) { height: .85rem; animation-delay: -.3s; }
+.motion-wave i:nth-child(3) { height: 1.2rem; animation-delay: -.6s; }
+.motion-spark { position: absolute; z-index: 3; top: .75rem; left: 34%; width: 1.15rem; height: 1.15rem; animation: spark-float 5s ease-in-out -1.4s infinite; }
+.motion-spark::before, .motion-spark::after { position: absolute; inset: 50% auto auto 50%; width: 100%; height: 2px; border-radius: 999px; background: var(--cobalt); content: ""; transform: translate(-50%, -50%); }
+.motion-spark::after { transform: translate(-50%, -50%) rotate(90deg); }
+.motion-clapper { position: absolute; z-index: 4; right: .35rem; bottom: .8rem; display: grid; width: 3.15rem; height: 2.7rem; place-items: center; border: 1px solid color-mix(in srgb, var(--cobalt) 30%, var(--line)); border-radius: .75rem; background: rgb(255 255 255 / .92); box-shadow: 0 .45rem .95rem rgb(16 35 63 / .09); animation: clapper-float 6.5s ease-in-out -1.1s infinite; }
+.motion-clapper svg { width: 2.65rem; overflow: visible; }
+.motion-clapper-body { fill: var(--ground); stroke: var(--cobalt); stroke-width: 2.25; }
+.motion-clapper-detail { fill: none; stroke: color-mix(in srgb, var(--cobalt) 55%, var(--ground)); stroke-width: 1.75; stroke-linecap: round; }
+.motion-clapper-slate { fill: var(--cobalt); stroke: var(--cobalt); stroke-width: 2; stroke-linecap: round; transform-box: view-box; transform-origin: 11px 22px; animation: clapper-close 2.8s cubic-bezier(.65, 0, .35, 1) infinite; }
+.motion-clapper-slate path { fill: none; stroke: var(--ground); stroke-width: 2; }
+
+@keyframes mascot-blink { 0%, 45%, 49%, 100% { transform: scaleY(1); } 47% { transform: scaleY(.08); } }
+@keyframes mascot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes mascot-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.018); } }
+@keyframes decor-float-left { 0%, 100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-5px) rotate(-2deg); } }
+@keyframes decor-float-right { 0%, 100% { transform: translateY(0) rotate(6deg); } 50% { transform: translateY(4px) rotate(3deg); } }
+@keyframes decor-drift { 0%, 100% { transform: translateY(0) rotate(2deg); } 50% { transform: translateY(-4px) rotate(-1deg); } }
+@keyframes wave-pulse { 0%, 100% { transform: scaleY(.7); } 50% { transform: scaleY(1); } }
+@keyframes spark-float { 0%, 100% { opacity: .7; transform: translateY(0) rotate(45deg) scale(.85); } 50% { opacity: 1; transform: translateY(-5px) rotate(45deg) scale(1); } }
+@keyframes clapper-float { 0%, 100% { transform: translateY(0) rotate(1.5deg); } 50% { transform: translateY(-3px) rotate(-1deg); } }
+@keyframes clapper-close { 0%, 68%, 82%, 100% { transform: rotate(-12deg); } 75% { transform: rotate(0); } }
 
 .resource-card { display: flex; flex-direction: column; align-items: stretch; max-width: 34rem; padding: 1.375rem 1.25rem; border-radius: 1rem; background: var(--ink); color: var(--ground); }
 .resource-card p { margin-bottom: 1.125rem; color: #b8c6d9; font-size: 1rem; }
@@ -184,6 +231,12 @@ footer p { margin-bottom: 0; font: 700 clamp(1.5rem, 5vw, 2rem)/1.15 var(--displ
   .journey-list a:last-child { border-right: 0; }
   .app-grid { grid-template-columns: repeat(4, 5.5rem); }
   .card-grid { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); align-items: stretch; }
+  .card-grid .soon { grid-column: 1 / -1; min-height: 20rem; padding: 2rem min(24rem, 36%) 2rem 2rem; }
+  .motion-mascot-stage { right: min(18rem, 18%); bottom: .75rem; width: min(24rem, 40%); height: 18rem; }
+  .motion-mascot { bottom: .75rem; left: calc(50% - 6.75rem); width: 13.5rem; }
+  .motion-frame { bottom: 1.65rem; width: 14rem; height: 11rem; }
+  .motion-chip-cc { top: 4.25rem; }
+  .motion-chip-fx { top: 2rem; }
   .app-detail { padding: 1.75rem; }
   .app-detail > [data-app-description] { max-width: 48rem; }
   .app-detail [data-app-stores] { width: min(100%, 31rem); }

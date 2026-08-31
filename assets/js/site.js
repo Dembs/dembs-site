@@ -4,6 +4,32 @@ export function revealDelay(index) {
   return Math.min(Math.max(index, 0), 4) * 70;
 }
 
+export function getMascotGaze(face, pointer) {
+  const centreX = face.left + face.width / 2;
+  const centreY = face.top + face.height / 2;
+  const normalise = (value, radius, limit) => Math.max(-limit, Math.min(limit, Math.round((value / radius) * limit)));
+  return {
+    x: normalise(pointer.clientX - centreX, face.width / 2, 8),
+    y: normalise(pointer.clientY - centreY, face.height / 2, 8)
+  };
+}
+
+export function initMotionMascot(root = document) {
+  const card = root.querySelector("[data-motion-mascot]");
+  const face = card?.querySelector("[data-motion-face]");
+  if (!card || !face) return;
+
+  const view = root.defaultView ?? window;
+  if (view.matchMedia("(prefers-reduced-motion: reduce)").matches || view.matchMedia("(pointer: coarse)").matches) return;
+
+  const setGaze = ({ x, y }) => {
+    card.style.setProperty("--gaze-x", `${x}px`);
+    card.style.setProperty("--gaze-y", `${y}px`);
+  };
+  card.addEventListener("pointermove", (event) => setGaze(getMascotGaze(face.getBoundingClientRect(), event)));
+  card.addEventListener("pointerleave", () => setGaze({ x: 0, y: 0 }));
+}
+
 export function initReveals(root = document) {
   const items = [...root.querySelectorAll("[data-reveal]")];
   if (!items.length) return;
@@ -190,4 +216,5 @@ if (typeof document !== "undefined") {
   renderFocusCampaign();
   initAppPicker();
   initReveals();
+  initMotionMascot();
 }

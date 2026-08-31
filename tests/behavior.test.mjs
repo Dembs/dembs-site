@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { initAppPicker, initMenu, initReveals, revealDelay, selectApp } from "../assets/js/site.js";
+import { getMascotGaze, initAppPicker, initMenu, initReveals, initMotionMascot, revealDelay, selectApp } from "../assets/js/site.js";
 
 const css = await readFile(new URL("../assets/css/site.css", import.meta.url), "utf8");
 
@@ -121,6 +121,56 @@ test("reveal staggering is capped to keep the page responsive", () => {
   assert.equal(revealDelay(0), 0);
   assert.equal(revealDelay(2), 140);
   assert.equal(revealDelay(9), 280);
+});
+
+test("the Motion Stack mascot gaze is centred and clamped inside its face", () => {
+  const face = { left: 100, top: 50, width: 80, height: 60 };
+
+  assert.deepEqual(getMascotGaze(face, { clientX: 140, clientY: 80 }), { x: 0, y: 0 });
+  assert.deepEqual(getMascotGaze(face, { clientX: 999, clientY: -999 }), { x: 8, y: -8 });
+  assert.deepEqual(getMascotGaze(face, { clientX: -999, clientY: 999 }), { x: -8, y: 8 });
+});
+
+test("the Motion Stack mascot follows the pointer and recentres when it leaves", () => {
+  const listeners = new Map();
+  const properties = new Map();
+  const face = { getBoundingClientRect: () => ({ left: 100, top: 50, width: 80, height: 60 }) };
+  const card = {
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    querySelector(selector) { return selector === "[data-motion-face]" ? face : null; },
+    style: { setProperty(name, value) { properties.set(name, value); } }
+  };
+  const root = {
+    defaultView: { matchMedia: () => ({ matches: false }) },
+    querySelector(selector) { return selector === "[data-motion-mascot]" ? card : null; }
+  };
+
+  initMotionMascot(root);
+  listeners.get("pointermove")({ clientX: 999, clientY: -999 });
+  assert.equal(properties.get("--gaze-x"), "8px");
+  assert.equal(properties.get("--gaze-y"), "-8px");
+
+  listeners.get("pointerleave")();
+  assert.equal(properties.get("--gaze-x"), "0px");
+  assert.equal(properties.get("--gaze-y"), "0px");
+});
+
+test("the Motion Stack mascot does not track touch on coarse-pointer devices", () => {
+  const listeners = new Map();
+  const face = { getBoundingClientRect: () => ({ left: 100, top: 50, width: 80, height: 60 }) };
+  const card = {
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    querySelector(selector) { return selector === "[data-motion-face]" ? face : null; },
+    style: { setProperty() {} }
+  };
+  const root = {
+    defaultView: { matchMedia: (query) => ({ matches: query === "(pointer: coarse)" }) },
+    querySelector(selector) { return selector === "[data-motion-mascot]" ? card : null; }
+  };
+
+  initMotionMascot(root);
+
+  assert.equal(listeners.size, 0);
 });
 
 test("reveals assign capped delays and become visible only once observed", () => {
@@ -250,6 +300,13 @@ test("reduced motion removes animation and transition delays", () => {
   const reducedMotionBlock = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*)\}\s*$/)?.[1] ?? "";
   assert.match(reducedMotionBlock, /animation-delay:\s*0(?:ms|s)\s*!important/);
   assert.match(reducedMotionBlock, /transition-delay:\s*0(?:ms|s)\s*!important/);
+});
+
+test("the Motion Stack clapper uses one restrained closing animation", () => {
+  assert.match(css, /\.motion-clapper\s*\{[^}]*animation:\s*clapper-float/);
+  assert.match(css, /\.motion-clapper-slate\s*\{[^}]*animation:\s*clapper-close 2\.8s/);
+  assert.match(css, /@keyframes clapper-close/);
+  assert.doesNotMatch(css, /scissors-(?:float|cut)/);
 });
 
 function withObserverStub(run) {
