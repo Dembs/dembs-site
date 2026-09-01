@@ -12,7 +12,7 @@ export const APPS = Object.freeze([
   {
     id: "civi", name: "Civi", tag: "examen civique 2026",
     description: "L’examen civique révisé sans panique, un quiz par jour jusqu’au jour J.",
-    icon: "assets/icons/civi.png", pixel: false,
+    icon: "assets/icons/civi.png?v=20260901", pixel: false,
     background: "#1B2A4A", foreground: "#F2F0EA",
     badgeBackground: "#C5A55A", badgeForeground: "#1B2A4A",
     status: "published", statusLabel: "Disponible",

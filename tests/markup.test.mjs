@@ -123,6 +123,7 @@ test("the Civi tile ships the supplied application icon", () => {
     createHash("sha256").update(civiIcon).digest("hex"),
     "78846a033e2989ff208dae65b49b20628d911320499eed625d676d5c3e70a2f9"
   );
+  assert.match(html, /src="assets\/icons\/civi\.png\?v=20260901"/);
 });
 
 test("the menu carries the booking action and a labelled toggle icon", () => {

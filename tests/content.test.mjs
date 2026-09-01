@@ -11,6 +11,13 @@ test("the four current apps keep stable ids and valid destinations", () => {
   }
 });
 
+test("Civi uses the cache-busted application icon", () => {
+  assert.equal(
+    APPS.find((app) => app.id === "civi")?.icon,
+    "assets/icons/civi.png?v=20260901"
+  );
+});
+
 test("resolveCampaign returns only complete allow-listed campaigns", () => {
   assert.equal(resolveCampaign(null), null);
   assert.equal(resolveCampaign("unknown"), null);
