@@ -68,8 +68,11 @@ export function initReveals(root = document) {
         // reveal it rather than leaving it stuck at opacity 0.
         const scrolledPast = entry.boundingClientRect?.bottom <= 0;
         if (!entry.isIntersecting && !scrolledPast) continue;
-        entry.target.classList.add("is-visible");
-        observer.unobserve(entry.target);
+        const revealTargets = [entry.target, ...(entry.target.querySelectorAll?.("[data-reveal]") ?? [])];
+        for (const target of revealTargets) {
+          target.classList.add("is-visible");
+          observer.unobserve(target);
+        }
       }
     }, { threshold: 0.12, rootMargin: "0px 0px -8%" });
 

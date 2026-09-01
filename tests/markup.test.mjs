@@ -50,6 +50,19 @@ test("homepage preserves required external destinations", () => {
   ]) assert.ok(html.includes(destination), destination);
 });
 
+test("social destinations reveal as accessible icon controls", () => {
+  const socialLinks = html.match(/<div class="social-links">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  const links = [...socialLinks.matchAll(/<a\b[\s\S]*?<\/a>/g)].map(([link]) => link);
+
+  assert.equal(links.length, 3);
+  for (const [index, name] of ["TikTok", "Instagram", "YouTube"].entries()) {
+    assert.match(links[index], new RegExp(`class="social-link"[^>]*aria-label="${name}"`));
+    assert.match(links[index], new RegExp(`data-reveal-index="${index}"`));
+    assert.match(links[index], /\bdata-reveal\b/);
+    assert.match(links[index], /<svg class="social-icon"[^>]*aria-hidden="true"/);
+  }
+});
+
 test("interactive controls expose accessible state", () => {
   assert.match(html, /aria-controls=["']site-menu["']/);
   assert.match(html, /aria-expanded=["']false["']/);
@@ -103,7 +116,8 @@ test("campaign keeps safe content slots hidden until a known focus is resolved",
   assert.match(campaign, /data-campaign-affiliate hidden/);
 });
 
-test("the cadrage offer keeps its duration without publishing a fixed price", () => {
+test("nothing that leads to the paid call is advertised as free", () => {
+  // The cadrage call costs 49 €. The guide is the only genuinely free thing here.
   const blocks = [
     html.match(/<div class="action-bar">[\s\S]*?<\/div>\s*<\/body>/)?.[0] ?? "",
     ...[...html.matchAll(/<article\b[\s\S]*?<\/article>/g)].map(([block]) => block)
@@ -113,9 +127,19 @@ test("the cadrage offer keeps its duration without publishing a fixed price", ()
   for (const block of blocks) {
     assert.doesNotMatch(block, /gratuit/i, block.slice(0, 120));
   }
-  assert.doesNotMatch(html, /39\s*€/);
-  assert.match(html, /<p class="meta">45 min<\/p>/);
-  assert.match(html, /<span>Appel de cadrage · 45 min<\/span>/);
+  assert.match(html, /<p class="meta">45 min · 49 €<\/p>/);
+  assert.match(html, /<span>Appel de cadrage · 45 min · 49 €<\/span>/);
+  assert.doesNotMatch(html, /39 €/);
+});
+
+test("the complete accompaniment is clearly upcoming and cannot be booked", () => {
+  const services = html.match(/<section id="services"[\s\S]*?<\/section>/)?.[0] ?? "";
+  const upcoming = services.match(/<aside class="upcoming-card"[\s\S]*?<h3>Accompagnement complet<\/h3>[\s\S]*?<\/aside>/)?.[0] ?? "";
+
+  assert.ok(upcoming, "upcoming complete accompaniment card");
+  assert.match(upcoming, /<p class="meta">À venir<\/p>/);
+  assert.match(upcoming, /Un suivi de l’idée jusqu’à la publication\. Ouverture prochainement\./);
+  assert.doesNotMatch(upcoming, /href=|cal\.com/);
 });
 
 test("the Civi tile ships the supplied application icon", () => {

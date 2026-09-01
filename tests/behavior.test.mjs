@@ -201,6 +201,36 @@ test("reveals assign capped delays and become visible only once observed", () =>
   }
 });
 
+test("revealing a group also reveals its nested staggered items", () => {
+  const root = makeRevealRoot();
+  const [group, nestedItem] = root.items;
+  group.querySelectorAll = (selector) => selector === "[data-reveal]" ? [nestedItem] : [];
+  nestedItem.querySelectorAll = () => [];
+  const previousWindow = globalThis.window;
+  const previousMatchMedia = globalThis.matchMedia;
+  const previousIntersectionObserver = globalThis.IntersectionObserver;
+  let observer;
+  globalThis.window = globalThis;
+  globalThis.matchMedia = () => ({ matches: false });
+  globalThis.IntersectionObserver = class {
+    constructor(callback) { this.callback = callback; observer = this; }
+    observe(item) { (this.items ??= []).push(item); }
+    unobserve(item) { (this.unobserved ??= []).push(item); }
+  };
+  try {
+    initReveals(root);
+    observer.callback([{ isIntersecting: true, target: group }]);
+
+    assert.equal(group.classList.contains("is-visible"), true);
+    assert.equal(nestedItem.classList.contains("is-visible"), true);
+    assert.deepEqual(observer.unobserved, [group, nestedItem]);
+  } finally {
+    globalThis.window = previousWindow;
+    globalThis.matchMedia = previousMatchMedia;
+    globalThis.IntersectionObserver = previousIntersectionObserver;
+  }
+});
+
 test("reduced motion leaves reveal content immediately available", () => {
   const mediaQuery = makeMediaQuery(true);
   const root = makeRevealRoot(mediaQuery);

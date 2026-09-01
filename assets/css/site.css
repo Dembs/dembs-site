@@ -141,6 +141,9 @@ h3 { margin-bottom: .5rem; font-size: 1.5rem; line-height: 1.15; }
 .card-grid { display: grid; gap: .875rem; }
 .card-grid article { display: flex; flex-direction: column; align-items: stretch; padding: 1.375rem 1.25rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--ground); }
 .card-grid article > p:not(.meta) { flex: 1; margin-bottom: 1.125rem; color: var(--slate); font-size: 1rem; }
+.card-grid .upcoming-card { display: flex; flex-direction: column; align-items: stretch; padding: 1.375rem 1.25rem; border: 1.5px dashed color-mix(in srgb, var(--cobalt) 32%, var(--line)); border-radius: 1rem; background: color-mix(in srgb, var(--mist) 24%, transparent); }
+.card-grid .upcoming-card .meta { color: var(--cobalt); }
+.card-grid .upcoming-card p:not(.meta) { margin: 0; color: var(--slate); font-size: 1rem; }
 /* Motion Stack is a small portal into its own visual language, recoloured to
    belong on dembs.fr rather than looking like an unrelated dark advert. */
 .card-grid .soon { --gaze-x: 0px; --gaze-y: 0px; position: relative; display: grid; min-height: 29rem; overflow: hidden; padding: 1.5rem 1.25rem 14rem; border: 1.5px solid color-mix(in srgb, var(--cobalt) 36%, var(--line)); border-radius: 1.25rem; background: linear-gradient(145deg, var(--ground) 0 48%, color-mix(in srgb, var(--mist) 58%, var(--ground)) 100%); color: inherit; text-decoration: none; isolation: isolate; transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
@@ -204,8 +207,14 @@ h3 { margin-bottom: .5rem; font-size: 1.5rem; line-height: 1.15; }
 footer { display: grid; gap: 1.125rem; padding: 2.5rem var(--page-pad); border-top: 1px solid var(--line); background: var(--band); }
 footer p { margin-bottom: 0; font: 700 clamp(1.5rem, 5vw, 2rem)/1.15 var(--display); letter-spacing: -.04em; }
 .social-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
-.social-links a { min-height: 2.875rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 999px; background: var(--ground); font-weight: 600; font-size: .875rem; text-decoration: none; }
-.social-links a:hover { border-color: var(--cobalt); color: var(--cobalt); }
+.social-link { width: 3.25rem; min-height: 3.25rem; display: inline-flex; align-items: center; justify-content: center; justify-self: center; border: 1px solid var(--line); border-radius: 50%; background: var(--ground); color: var(--ink); text-decoration: none; box-shadow: 0 .35rem 1rem rgb(16 35 63 / .05); }
+.social-icon { width: 1.45rem; height: 1.45rem; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.social-icon-dot, .social-icon-fill { fill: currentColor; stroke: none; }
+.social-link:hover { border-color: var(--cobalt); color: var(--cobalt); transform: translateY(-2px); box-shadow: 0 .55rem 1.2rem rgb(16 35 63 / .1); }
+.social-link:focus-visible { outline: 3px solid color-mix(in srgb, var(--cobalt) 38%, transparent); outline-offset: 3px; }
+.reveal-enabled .social-link[data-reveal] { transform: translateY(12px) scale(.86); transition-timing-function: cubic-bezier(.22, .8, .35, 1); }
+.reveal-enabled .social-link[data-reveal].is-visible { transform: none; }
+.reveal-enabled .social-link[data-reveal].is-visible:hover { transform: translateY(-2px); }
 .legal-link { min-height: 2.75rem; display: inline-flex; align-items: center; color: var(--slate); font-size: .875rem; }
 
 /* Permanent booking action on mobile, where the hero CTA scrolls out of reach. */
