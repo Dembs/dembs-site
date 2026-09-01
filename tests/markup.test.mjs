@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const civiIcon = await readFile(new URL("../assets/icons/civi.png", import.meta.url));
 const pageRevealTagPattern = /(?:<aside\b(?=[^>]*\bid=["']campaign["'])|<section\b|<footer\b)[^>]*\sdata-reveal(?=\s|=|>)[^>]*>/g;
 
 test("homepage contains the validated positioning and section contracts", () => {
@@ -101,8 +103,7 @@ test("campaign keeps safe content slots hidden until a known focus is resolved",
   assert.match(campaign, /data-campaign-affiliate hidden/);
 });
 
-test("nothing that leads to the paid call is advertised as free", () => {
-  // The cadrage call costs 39 €. The guide is the only genuinely free thing here.
+test("the cadrage offer keeps its duration without publishing a fixed price", () => {
   const blocks = [
     html.match(/<div class="action-bar">[\s\S]*?<\/div>\s*<\/body>/)?.[0] ?? "",
     ...[...html.matchAll(/<article\b[\s\S]*?<\/article>/g)].map(([block]) => block)
@@ -112,9 +113,16 @@ test("nothing that leads to the paid call is advertised as free", () => {
   for (const block of blocks) {
     assert.doesNotMatch(block, /gratuit/i, block.slice(0, 120));
   }
-  // The price is stated where the offer is described; the bar just names the format.
-  assert.match(html, /<p class="meta">45 min · 39 €<\/p>/);
+  assert.doesNotMatch(html, /39\s*€/);
+  assert.match(html, /<p class="meta">45 min<\/p>/);
   assert.match(html, /<span>Appel de cadrage · 45 min<\/span>/);
+});
+
+test("the Civi tile ships the supplied application icon", () => {
+  assert.equal(
+    createHash("sha256").update(civiIcon).digest("hex"),
+    "78846a033e2989ff208dae65b49b20628d911320499eed625d676d5c3e70a2f9"
+  );
 });
 
 test("the menu carries the booking action and a labelled toggle icon", () => {
