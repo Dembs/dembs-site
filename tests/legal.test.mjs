@@ -29,15 +29,18 @@ test("the mandatory publisher identifications are present", () => {
 test("the legal page shares the site stylesheet instead of its own theme", () => {
   assert.match(html, /<link rel="stylesheet" href="assets\/css\/site\.css">/);
   assert.doesNotMatch(html, /<style>/);
-  assert.doesNotMatch(html, /Space\+Grotesk/);
-  assert.match(html, /Bricolage\+Grotesque/);
+  assert.doesNotMatch(html, /fonts\.googleapis\.com/);
+  assert.match(html, /<link rel="stylesheet" href="assets\/css\/fonts\.css">/);
   assert.match(html, /assets\/symbole-dembs\.svg/);
 });
 
 test("third-party disclosures cover every service the pages actually load", () => {
-  for (const service of ["GitHub Pages", "Cal.com", "Google Fonts", "ressources.dembs.fr"]) {
+  for (const service of ["GitHub Pages", "Cal.com", "ressources.dembs.fr", "Umami"]) {
     assert.ok(html.includes(service), service);
   }
+  // Fonts are self-hosted: the page must say so and must not still list Google Fonts as a processor.
+  assert.match(html, /Aucune requête n’est envoyée à Google Fonts/);
+  assert.match(html, /audit avant les stores/i);
   assert.match(html, /transfert de données de connexion hors de l’Union européenne/);
 });
 

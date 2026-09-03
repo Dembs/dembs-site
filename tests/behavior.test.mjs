@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { getMascotGaze, initAppPicker, initMenu, initReveals, initMotionMascot, revealDelay, selectApp } from "../assets/js/site.js";
+import { getMascotGaze, initActionBar, initAppPicker, initMenu, initReveals, initMotionMascot, revealDelay, selectApp, setActionBarVariant } from "../assets/js/site.js";
 
 const css = await readFile(new URL("../assets/css/site.css", import.meta.url), "utf8");
 
@@ -319,11 +319,51 @@ test("menu toggle names the action that matches its expanded state", () => {
   assert.equal(button.getAttribute("aria-label"), "Ouvrir le menu");
 });
 
-test("per-app tag and status text inherit the readable foreground color", () => {
-  assert.match(
-    css,
-    /\.app-detail \[data-app-tag\],\s*\.app-detail \[data-app-status\]\s*\{\s*color:\s*inherit;/
-  );
+test("the app card keeps the site palette and only tints itself with the app colour", () => {
+  assert.match(css, /\.app-detail \{[^}]*background: color-mix\(in srgb, var\(--app-background, var\(--mist\)\) 14%, var\(--ground\)\)[^}]*color: var\(--ink\)/);
+  assert.match(css, /\.app-detail \[data-app-stores\] a \{[^}]*background: var\(--cobalt\); color: var\(--ground\)/);
+  assert.match(css, /\.app-detail \[data-app-status\] \{[^}]*color: var\(--slate\)/);
+});
+
+test("the action bar switches between the cadrage and the audit offer", () => {
+  const nodes = {
+    cadrage: [{ hidden: false }, { hidden: false }],
+    audit: [{ hidden: true }, { hidden: true }]
+  };
+  const bar = {
+    dataset: {},
+    querySelectorAll: (selector) => selector.includes("audit") ? nodes.audit : nodes.cadrage
+  };
+  setActionBarVariant(bar, "audit");
+  assert.equal(bar.dataset.variant, "audit");
+  assert.deepEqual(nodes.cadrage.map((n) => n.hidden), [true, true]);
+  assert.deepEqual(nodes.audit.map((n) => n.hidden), [false, false]);
+  setActionBarVariant(bar, "cadrage");
+  assert.deepEqual(nodes.cadrage.map((n) => n.hidden), [false, false]);
+  assert.deepEqual(nodes.audit.map((n) => n.hidden), [true, true]);
+});
+
+test("the action bar follows the audit card into and out of view", () => {
+  let callback;
+  const observed = [];
+  class FakeObserver {
+    constructor(cb) { callback = cb; }
+    observe(target) { observed.push(target); }
+  }
+  const audit = { id: "audit" };
+  const nodes = { cadrage: [{ hidden: false }], audit: [{ hidden: true }] };
+  const bar = { dataset: {}, querySelectorAll: (selector) => selector.includes("audit") ? nodes.audit : nodes.cadrage };
+  const root = {
+    defaultView: { IntersectionObserver: FakeObserver },
+    querySelector: (selector) => selector === "[data-action-bar]" ? bar : null,
+    querySelectorAll: (selector) => selector === '[data-action="audit"]' ? [audit] : []
+  };
+  initActionBar(root);
+  assert.deepEqual(observed, [audit]);
+  callback([{ target: audit, isIntersecting: true }]);
+  assert.equal(bar.dataset.variant, "audit");
+  callback([{ target: audit, isIntersecting: false }]);
+  assert.equal(bar.dataset.variant, "cadrage");
 });
 
 test("reduced motion removes animation and transition delays", () => {

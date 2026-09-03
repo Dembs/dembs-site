@@ -10,6 +10,8 @@ directement le contenu a mettre a la racine web.
     assets/js/content.js       donnees des applications et campagnes TikTok
     assets/js/site.js          menu, campagne, carrousel et revelations au defilement
     assets/icons/              les 4 icones d'apps, 256x256
+    assets/img/                photo (hero, avatar) et image de partage og-image.jpg
+    assets/fonts/ + css/fonts.css  polices hebergees localement, aucune requete Google Fonts
     assets/symbole-dembs.svg   symbole de marque et favicon
     tests/                     contrats de contenu, de balisage et de comportement
     mentions-legales.html
@@ -83,12 +85,32 @@ son usage réel et sa destination sont approuvés :
 4. Pour retirer la dernière recommandation, supprimer sa carte puis remettre
    l’attribut `hidden` sur la section.
 
+## Offres cal.com
+
+Deux evenements, les liens sont en dur dans `index.html` :
+
+- `cal.com/dembs/cadrage-app`, 45 min, 49 EUR.
+- `cal.com/dembs/audit-stores`, 60 min, 129 EUR, Stripe, remboursement si annulation
+  2 jours ouvres avant.
+
+La barre d'action fixe (mobile) bascule sur l'audit quand la carte `#audit` est visible.
+
+## Motion Stack
+
+La section `#motion-stack` est placee sous le hero le temps de la campagne video. Le
+commentaire dans `index.html` explique comment la redescendre.
+
+## Mesure d'audience
+
+Une balise Umami (sans cookie) est preparee en commentaire dans `<head>`. Creer le site
+sur cloud.umami.is, renseigner `data-website-id`, decommenter, et ajouter Umami dans la
+liste des services des mentions legales.
+
 ## A finir
 
-- Creer la boite mail contact@dembs.fr dans l'espace OVH : elle est publiee dans les
-  mentions legales, elle doit fonctionner avant la mise en ligne.
 - Mentions legales, ligne TVA : decommenter la mention de franchise en base (article 293 B)
   ou la remplacer par le numero de TVA intracommunautaire.
-- Passer l'evenement cal.com de 30 a 45 minutes, la page affiche 45 min.
+- Remplacer `assets/img/demba.jpg` et `demba.webp` par un recadrage de l'original HD
+  quand il est disponible (meme ratio 4:5, 476x595 minimum).
 - Recommandations : ne publier une carte qu’après validation de son contenu et de sa
   destination réelle. Aucune mention de Wayhost.

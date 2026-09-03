@@ -214,8 +214,36 @@ export function renderFocusCampaign(root = document, search = location.search) {
   container.hidden = false;
 }
 
+// The fixed bar sells the cadrage call by default and switches to the audit while
+// the audit card is on screen, so the visible offer and the button always agree.
+export function setActionBarVariant(bar, variant) {
+  if (!bar) return;
+  bar.dataset.variant = variant;
+  bar.querySelectorAll("[data-variant-cadrage]").forEach((node) => { node.hidden = variant !== "cadrage"; });
+  bar.querySelectorAll("[data-variant-audit]").forEach((node) => { node.hidden = variant !== "audit"; });
+}
+
+export function initActionBar(root = document) {
+  const bar = root.querySelector("[data-action-bar]");
+  const targets = [...root.querySelectorAll('[data-action="audit"]')];
+  if (!bar || !targets.length) return;
+  const view = root.defaultView ?? window;
+  const Observer = view.IntersectionObserver ?? window.IntersectionObserver;
+  if (!Observer) return;
+  const visible = new Set();
+  const observer = new Observer((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) visible.add(entry.target);
+      else visible.delete(entry.target);
+    }
+    setActionBarVariant(bar, visible.size ? "audit" : "cadrage");
+  }, { threshold: 0.35 });
+  targets.forEach((target) => observer.observe(target));
+}
+
 if (typeof document !== "undefined") {
   initMenu();
+  initActionBar();
   renderFocusCampaign();
   initAppPicker();
   initReveals();
