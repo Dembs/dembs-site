@@ -52,6 +52,63 @@ test("homepage preserves required external destinations", () => {
   ]) assert.ok(html.includes(destination), destination);
 });
 
+test("the video setup exposes every approved affiliate destination", () => {
+  const recommendations = html.match(/<section id="recommendations"[\s\S]*?<\/section>/)?.[0] ?? "";
+  const destinations = [
+    "https://amzn.to/4A2Sdqw",
+    "https://amzn.to/4xJ6QxE",
+    "https://amzn.to/4ylg8j4",
+    "https://amzn.to/4d0rtwO",
+    "https://amzn.to/3UUNKWE",
+    "https://amzn.to/4qT4QA4"
+  ];
+
+  assert.ok(recommendations, "recommendations section");
+  assert.doesNotMatch(recommendations.match(/^<section\b[^>]*>/)?.[0] ?? "", /\bhidden\b/);
+  assert.match(html, /<a href="#recommendations">Matériel<\/a>/);
+  for (const destination of destinations) {
+    assert.ok(recommendations.includes(`href="${destination}"`), destination);
+  }
+});
+
+test("affiliate recommendations are transparent and safely qualified", () => {
+  const recommendations = html.match(/<section id="recommendations"[\s\S]*?<\/section>/)?.[0] ?? "";
+  const affiliateLinks = [...recommendations.matchAll(/<a\b[^>]*href="https:\/\/amzn\.to\/[^\"]+"[^>]*>/g)].map(([link]) => link);
+
+  assert.equal(affiliateLinks.length, 6);
+  for (const link of affiliateLinks) {
+    assert.match(link, /\btarget="_blank"/);
+    assert.match(link, /\brel="[^"]*\bsponsored\b[^"]*"/);
+    assert.match(link, /\brel="[^"]*\bnoopener\b[^"]*"/);
+  }
+  assert.equal((recommendations.match(/Lien affilié/g) ?? []).length, 6);
+  assert.doesNotMatch(recommendations, /Lien rémunéré par Amazon/);
+  assert.match(recommendations, /En tant que Partenaire Amazon, je réalise un bénéfice sur les achats remplissant les conditions requises\./);
+  assert.match(recommendations, /Modèle actuellement indisponible/);
+});
+
+test("the featured camera uses the supplied Osmo artwork", async () => {
+  const recommendations = html.match(/<section id="recommendations"[\s\S]*?<\/section>/)?.[0] ?? "";
+  const artwork = await readFile(new URL("../assets/images/osmo-pocket-3.png", import.meta.url));
+
+  assert.equal(
+    createHash("sha256").update(artwork).digest("hex"),
+    "cd07891549d00f011c6f6fbb148107be238ee91163a2223bc942e9e71aa93c7d"
+  );
+  assert.match(recommendations, /<img class="gear-camera-product" src="assets\/images\/osmo-pocket-3\.png" alt="" width="360" height="360">/);
+});
+
+test("storage icons read as physical media instead of labelled placeholders", () => {
+  const recommendations = html.match(/<section id="recommendations"[\s\S]*?<\/section>/)?.[0] ?? "";
+  const microSd = recommendations.match(/<svg class="gear-icon gear-icon-microsd"[\s\S]*?<\/svg>/)?.[0] ?? "";
+  const drive = recommendations.match(/<svg class="gear-icon gear-icon-drive"[\s\S]*?<\/svg>/)?.[0] ?? "";
+
+  assert.match(microSd, /class="gear-card-contact"/);
+  assert.doesNotMatch(microSd, /<text\b/);
+  assert.match(drive, /class="gear-drive-face"/);
+  assert.match(drive, /class="gear-drive-cable"/);
+});
+
 test("social destinations reveal as accessible icon controls", () => {
   const socialLinks = html.match(/<div class="social-links">([\s\S]*?)<\/div>/)?.[1] ?? "";
   const links = [...socialLinks.matchAll(/<a\b[\s\S]*?<\/a>/g)].map(([link]) => link);

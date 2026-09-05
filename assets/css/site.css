@@ -71,6 +71,8 @@ button { font: inherit; }
 .menu-panel:not([hidden]) > a:nth-child(3) { animation-delay: 120ms; }
 .menu-panel:not([hidden]) > a:nth-child(4) { animation-delay: 155ms; }
 .menu-panel:not([hidden]) > a:nth-child(5) { animation-delay: 190ms; }
+.menu-panel:not([hidden]) > a:nth-child(6) { animation-delay: 225ms; }
+.menu-panel:not([hidden]) > a:nth-child(7) { animation-delay: 260ms; }
 
 main, footer { width: min(100%, calc(var(--content) + var(--page-pad) * 2)); margin-inline: auto; }
 section { padding: clamp(2.75rem, 8vw, 5rem) var(--page-pad); }
@@ -214,6 +216,53 @@ h3 { margin-bottom: .5rem; font-size: 1.5rem; line-height: 1.15; }
 .resource-card { display: flex; flex-direction: column; align-items: stretch; max-width: 34rem; padding: 1.375rem 1.25rem; border-radius: 1rem; background: var(--ink); color: var(--ground); }
 .resource-card p { margin-bottom: 1.125rem; color: #b8c6d9; font-size: 1rem; }
 
+/* The setup is an editorial field note, not an ecommerce grid: one camera
+   anchors the section, then the supporting kit is grouped by the job it does. */
+.gear-section > .lead { margin-bottom: 1.75rem; }
+.gear-layout { display: grid; gap: 1rem; }
+.gear-feature { position: relative; display: grid; min-height: 24rem; overflow: hidden; padding: 1.5rem 1.25rem 12.5rem; border: 1px solid color-mix(in srgb, var(--cobalt) 24%, var(--line)); border-radius: 1.25rem; background: var(--mist); color: var(--ink); text-decoration: none; transition: border-color 180ms ease, transform 180ms ease; }
+.gear-feature-copy { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; }
+.gear-category { margin-bottom: .75rem; color: var(--cobalt-deep); font: 500 .75rem/1.4 var(--mono); }
+.gear-feature-copy > strong { max-width: 13ch; font: 750 clamp(2rem, 9vw, 3.5rem)/1 var(--display); letter-spacing: -.05em; }
+.gear-variant { margin-top: .25rem; color: var(--cobalt-deep); font-weight: 700; }
+.gear-description { max-width: 31rem; margin-top: 1rem; color: var(--slate); font-size: 1rem; }
+.gear-affiliate { margin-top: 1rem; color: var(--slate); font: 500 .6875rem/1.5 var(--mono); }
+.gear-action { display: inline-flex; align-items: center; min-height: 2.75rem; margin-top: .5rem; color: var(--cobalt-deep); font-weight: 700; }
+.gear-action::after { width: .45rem; height: .45rem; margin-left: .6rem; border-top: 2px solid currentColor; border-right: 2px solid currentColor; content: ""; transform: rotate(45deg); }
+.gear-feature:hover { border-color: var(--cobalt); transform: translateY(-2px); }
+
+.gear-camera-stage { position: absolute; right: .5rem; bottom: -.5rem; display: grid; width: 13.5rem; height: 13.5rem; place-items: center; isolation: isolate; }
+.gear-camera-glow { position: absolute; z-index: -1; width: 10.5rem; height: 10.5rem; border-radius: 50%; background: color-mix(in srgb, var(--ground) 72%, transparent); box-shadow: 0 1.2rem 3rem color-mix(in srgb, var(--cobalt) 24%, transparent); }
+.gear-camera-product { width: 12rem; height: 12rem; object-fit: contain; filter: drop-shadow(0 1.15rem 1rem rgb(16 35 63 / .25)); animation: gear-camera-float 5.8s ease-in-out infinite; }
+@keyframes gear-camera-float { 0%, 100% { transform: translateY(0) rotate(2deg); } 50% { transform: translateY(-8px) rotate(-1deg); } }
+
+.gear-groups { display: grid; gap: 1rem; }
+.gear-group { min-width: 0; }
+.gear-group > h3 { margin: 0 0 .625rem; color: var(--slate); font: 600 1rem/1.4 var(--body); letter-spacing: 0; }
+.gear-list { overflow: hidden; border: 1px solid var(--line); border-radius: 1rem; background: var(--ground); }
+.gear-item { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) .75rem; align-items: center; gap: .875rem; min-height: 8.25rem; padding: 1rem; border-bottom: 1px solid var(--line); text-decoration: none; }
+.gear-item:last-child { border-bottom: 0; }
+.gear-item::after { width: .45rem; height: .45rem; border-top: 2px solid var(--cobalt); border-right: 2px solid var(--cobalt); content: ""; transform: rotate(45deg); }
+.gear-item:hover { background: color-mix(in srgb, var(--mist) 25%, var(--ground)); }
+.gear-item-copy { display: flex; min-width: 0; flex-direction: column; }
+.gear-item-copy > strong { margin-bottom: .25rem; font: 700 1.125rem/1.2 var(--display); letter-spacing: -.025em; }
+.gear-item-copy > span:not(.gear-status) { color: var(--slate); font-size: .875rem; line-height: 1.45; }
+.gear-item-copy > small { margin-top: .55rem; color: var(--slate); font: 500 .625rem/1.45 var(--mono); }
+.gear-status { align-self: flex-start; margin-top: .5rem; padding: .2rem .45rem; border-radius: .375rem; background: var(--band); color: var(--slate); font-size: .6875rem; font-weight: 600; }
+.gear-mark { display: grid; width: 3.5rem; height: 3.5rem; place-items: center; border: 1px solid color-mix(in srgb, var(--cobalt) 28%, var(--line)); border-radius: .875rem; background: var(--mist); color: var(--cobalt-deep); }
+.gear-icon { width: 2.75rem; height: 2.75rem; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.gear-icon-microsd .gear-card-body { fill: #21395f; stroke: currentColor; }
+.gear-icon-microsd .gear-card-contact { fill: #f1bf52; stroke: #d69722; stroke-width: 1.2; }
+.gear-icon-microsd .gear-card-ridge { stroke: #7ea7eb; stroke-width: 1.6; }
+.gear-icon-panel circle { fill: currentColor; stroke: none; }
+.gear-icon-torch .gear-light-beam { fill: url(#fl10-beam); stroke: none; }
+.gear-icon-drive .gear-drive-face { fill: #21395f; stroke: currentColor; }
+.gear-icon-drive .gear-drive-highlight { stroke: #789fe0; stroke-width: 1.5; }
+.gear-icon-drive .gear-drive-led { fill: #72dea6; stroke: none; }
+.gear-icon-drive .gear-drive-cable,
+.gear-icon-drive .gear-drive-plug { stroke: currentColor; }
+.affiliate-disclosure { max-width: 48rem; margin: .875rem 0 0; color: var(--slate); font-size: .75rem; line-height: 1.5; }
+
 .reveal-enabled [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity 420ms ease-out var(--reveal-delay, 0ms), transform 420ms ease-out var(--reveal-delay, 0ms); }
 .reveal-enabled [data-reveal].is-visible { opacity: 1; transform: none; }
 /* Content wins over decoration: the fallback shows everything with no transition to wait on. */
@@ -276,6 +325,12 @@ footer { display: grid; gap: .75rem; padding: 1.75rem var(--page-pad); border-to
   .app-detail { padding: 1.75rem; }
   .app-detail > [data-app-description] { max-width: 48rem; }
   .app-detail [data-app-stores] { width: min(100%, 31rem); }
+  .gear-feature { grid-template-columns: minmax(0, 1fr) 17rem; min-height: 22rem; padding: 2rem; }
+  .gear-camera-stage { top: 50%; right: 2rem; bottom: auto; width: 16rem; height: 19rem; transform: translateY(-50%); }
+  .gear-camera-glow { width: 13rem; height: 13rem; }
+  .gear-camera-product { width: 16rem; height: 16rem; }
+  .gear-feature-copy > strong { font-size: clamp(2.75rem, 6vw, 4.25rem); }
+  .gear-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .about-card { grid-template-columns: auto 1fr; align-items: start; column-gap: 2rem; }
   .about-portrait img { width: 9rem; height: 9rem; }
   footer { grid-template-columns: 1fr auto; align-items: center; }

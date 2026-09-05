@@ -112,5 +112,3 @@ liste des services des mentions legales.
   ou la remplacer par le numero de TVA intracommunautaire.
 - Remplacer `assets/img/demba.jpg` et `demba.webp` par un recadrage de l'original HD
   quand il est disponible (meme ratio 4:5, 476x595 minimum).
-- Recommandations : ne publier une carte qu’après validation de son contenu et de sa
-  destination réelle. Aucune mention de Wayhost.
