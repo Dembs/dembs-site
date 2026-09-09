@@ -325,51 +325,85 @@ test("the app card keeps the site palette and only tints itself with the app col
   assert.match(css, /\.app-detail \[data-app-status\] \{[^}]*color: var\(--slate\)/);
 });
 
-test("the action bar switches between the cadrage and the audit offer", () => {
+test("the action bar switches between the Lab, cadrage and audit paths", () => {
   const nodes = {
+    lab: [{ hidden: false }, { hidden: false }],
     cadrage: [{ hidden: false }, { hidden: false }],
     audit: [{ hidden: true }, { hidden: true }]
   };
   const bar = {
     dataset: {},
-    querySelectorAll: (selector) => selector.includes("audit") ? nodes.audit : nodes.cadrage
+    querySelectorAll: (selector) => nodes[selector.match(/data-variant-(\w+)/)?.[1]] ?? []
   };
   setActionBarVariant(bar, "audit");
   assert.equal(bar.dataset.variant, "audit");
+  assert.deepEqual(nodes.lab.map((n) => n.hidden), [true, true]);
   assert.deepEqual(nodes.cadrage.map((n) => n.hidden), [true, true]);
   assert.deepEqual(nodes.audit.map((n) => n.hidden), [false, false]);
   setActionBarVariant(bar, "cadrage");
+  assert.deepEqual(nodes.lab.map((n) => n.hidden), [true, true]);
   assert.deepEqual(nodes.cadrage.map((n) => n.hidden), [false, false]);
+  assert.deepEqual(nodes.audit.map((n) => n.hidden), [true, true]);
+  setActionBarVariant(bar, "lab");
+  assert.deepEqual(nodes.lab.map((n) => n.hidden), [false, false]);
+  assert.deepEqual(nodes.cadrage.map((n) => n.hidden), [true, true]);
   assert.deepEqual(nodes.audit.map((n) => n.hidden), [true, true]);
 });
 
-test("the action bar follows the audit card into and out of view", () => {
+test("the action bar follows services and returns to the Lab outside them", () => {
   let callback;
   const observed = [];
   class FakeObserver {
     constructor(cb) { callback = cb; }
     observe(target) { observed.push(target); }
   }
-  const audit = { id: "audit" };
-  const nodes = { cadrage: [{ hidden: false }], audit: [{ hidden: true }] };
-  const bar = { dataset: {}, querySelectorAll: (selector) => selector.includes("audit") ? nodes.audit : nodes.cadrage };
+  const services = { dataset: { action: "cadrage" } };
+  const audit = { dataset: { action: "audit" } };
+  const nodes = { lab: [{ hidden: false }], cadrage: [{ hidden: true }], audit: [{ hidden: true }] };
+  const bar = { dataset: {}, querySelectorAll: (selector) => nodes[selector.match(/data-variant-(\w+)/)?.[1]] ?? [] };
   const root = {
     defaultView: { IntersectionObserver: FakeObserver },
     querySelector: (selector) => selector === "[data-action-bar]" ? bar : null,
-    querySelectorAll: (selector) => selector === '[data-action="audit"]' ? [audit] : []
+    querySelectorAll: (selector) => selector === "[data-action]" ? [services, audit] : []
   };
   initActionBar(root);
-  assert.deepEqual(observed, [audit]);
+  assert.deepEqual(observed, [services, audit]);
+  callback([{ target: services, isIntersecting: true }]);
+  assert.equal(bar.dataset.variant, "cadrage");
   callback([{ target: audit, isIntersecting: true }]);
   assert.equal(bar.dataset.variant, "audit");
   callback([{ target: audit, isIntersecting: false }]);
   assert.equal(bar.dataset.variant, "cadrage");
+  callback([{ target: services, isIntersecting: false }]);
+  assert.equal(bar.dataset.variant, "lab");
 });
 
 test("reduced motion removes animation and transition delays", () => {
   const reducedMotionBlock = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*)\}\s*$/)?.[1] ?? "";
   assert.match(reducedMotionBlock, /animation-delay:\s*0(?:ms|s)\s*!important/);
   assert.match(reducedMotionBlock, /transition-delay:\s*0(?:ms|s)\s*!important/);
+});
+
+test("the main Lab action uses one restrained four-second attention cycle", () => {
+  assert.match(css, /\.lab-cta\s*\{[^}]*animation:\s*lab-cta-nudge 4s/);
+  const keyframes = css.match(/@keyframes lab-cta-nudge\s*\{([^}]*(?:\}[^@]*)?)\}/)?.[1] ?? "";
+  assert.match(keyframes, /0%,\s*78%,\s*100%/);
+});
+
+test("decorative artwork cannot create horizontal scrolling on mobile", () => {
+  assert.match(css, /html\s*\{[^}]*overflow-x:\s*clip/);
+});
+
+test("the Lab section uses the quiet page palette with cobalt reserved for emphasis", () => {
+  assert.match(css, /\.lab-portal\s*\{[^}]*background:\s*var\(--band\)[^}]*color:\s*var\(--ink\)/);
+  assert.doesNotMatch(css, /\.lab-console|\.lab-bubble|\.lab-readout/);
+});
+
+test("the Lab comes alive once with a six-second liquid accent and staggered benefits", () => {
+  assert.match(css, /\.lab-portal\.is-visible \.lab-mark-liquid\s*\{[^}]*animation:\s*lab-liquid-fill/);
+  assert.match(css, /\.lab-portal\.is-visible \.lab-liquid-group\s*\{[^}]*animation:\s*lab-liquid-sway 6s/);
+  assert.match(css, /\.lab-portal\.is-visible \.lab-benefits li\s*\{[^}]*animation:\s*lab-benefit-in/);
+  assert.match(css, /\.lab-benefits li:nth-child\(3\)\s*\{[^}]*animation-delay:/);
 });
 
 test("the Motion Stack clapper uses one restrained closing animation", () => {

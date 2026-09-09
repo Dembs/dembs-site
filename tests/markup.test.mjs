@@ -13,7 +13,7 @@ test("homepage contains the validated positioning and section contracts", () => 
   assert.match(html, /Développeur d’applications/);
   assert.match(html, /Je crée des apps\. Et je les mène jusqu’aux stores\./);
   assert.match(html, /Je partage le processus et j’accompagne ceux qui veulent lancer la leur\./);
-  for (const id of ["site-menu", "campaign", "journeys", "apps", "app-detail", "services", "resources", "recommendations"]) {
+  for (const id of ["site-menu", "lab", "campaign", "journeys", "apps", "app-detail", "services", "resources", "recommendations"]) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
   }
 });
@@ -44,6 +44,7 @@ test("journey and service cards reset their reveal stagger within each group", (
 
 test("homepage preserves required external destinations", () => {
   for (const destination of [
+    "https://klubizz.com/@dembs-lab",
     "https://ressources.dembs.fr/guide",
     "https://cal.com/dembs/cadrage-app",
     "https://www.tiktok.com/@dembstech",
@@ -109,17 +110,45 @@ test("storage icons read as physical media instead of labelled placeholders", ()
   assert.match(drive, /class="gear-drive-cable"/);
 });
 
-test("social destinations reveal as accessible icon controls", () => {
+test("social destinations remain visible as accessible controls without JavaScript", () => {
   const socialLinks = html.match(/<div class="social-links">([\s\S]*?)<\/div>/)?.[1] ?? "";
   const links = [...socialLinks.matchAll(/<a\b[\s\S]*?<\/a>/g)].map(([link]) => link);
 
   assert.equal(links.length, 3);
   for (const [index, name] of ["TikTok", "Instagram", "YouTube"].entries()) {
     assert.match(links[index], new RegExp(`class="social-link"[^>]*aria-label="${name}"`));
-    assert.match(links[index], new RegExp(`data-reveal-index="${index}"`));
-    assert.match(links[index], /\bdata-reveal\b/);
+    assert.doesNotMatch(links[index], /\bdata-reveal\b/);
     assert.match(links[index], /<svg class="social-icon"[^>]*aria-hidden="true"/);
   }
+});
+
+test("the Lab is the homepage primary path instead of a generic link directory", () => {
+  const hero = html.match(/<section class="hero">[\s\S]*?<\/section>/)?.[0] ?? "";
+  const lab = html.match(/<section id="lab"[\s\S]*?<\/section>/)?.[0] ?? "";
+  const menu = html.match(/<nav id="site-menu"[\s\S]*?<\/nav>/)?.[0] ?? "";
+
+  assert.match(hero, /class="button primary lab-cta" href="https:\/\/klubizz\.com\/@dembs-lab"/);
+  assert.match(lab, /Construire seul ne veut pas dire avancer seul\./);
+  assert.match(lab, /Rejoindre gratuitement le Lab/);
+  assert.match(menu, /<a href="#lab">Dembs Lab<\/a>/);
+  assert.match(menu, /class="menu-cta" href="https:\/\/klubizz\.com\/@dembs-lab"/);
+});
+
+test("the Lab presentation stays editorial instead of using a pixel console", () => {
+  const lab = html.match(/<section id="lab"[\s\S]*?<\/section>/)?.[0] ?? "";
+
+  assert.match(lab, /class="lab-mark"/);
+  assert.match(lab, /class="lab-mark-liquid"/);
+  assert.doesNotMatch(lab, /lab-console|lab-flask|lab-bubble|BUILD|TEST|SHIP/);
+});
+
+test("the footer ends the mobile page with a Lab invitation and named social links", () => {
+  const footer = html.match(/<footer id="site-footer"[\s\S]*?<\/footer>/)?.[0] ?? "";
+
+  assert.match(footer, /Tu construis quelque chose \?/);
+  assert.match(footer, /href="https:\/\/klubizz\.com\/@dembs-lab"/);
+  for (const name of ["TikTok", "Instagram", "YouTube"]) assert.match(footer, new RegExp(`>${name}<`));
+  assert.doesNotMatch(footer, /\bdata-reveal\b/);
 });
 
 test("interactive controls expose accessible state", () => {
@@ -141,14 +170,17 @@ test("the app picker is a static grid, never an autoplaying rail", () => {
   assert.equal((grid.match(/aria-current=["']true["']/g) ?? []).length, 1);
 });
 
-test("a permanent booking action stays reachable once the hero scrolls away", () => {
+test("the mobile action bar defaults to the Lab and keeps contextual service actions", () => {
   const bar = html.match(/<div class="action-bar"[^>]*>[\s\S]*?<\/div>/)?.[0] ?? "";
   assert.ok(bar, "action bar");
-  assert.match(bar, /data-action-bar data-variant="cadrage"/);
-  assert.match(bar, /<span class="action-bar-text" data-variant-cadrage>/);
+  assert.match(bar, /data-action-bar data-variant="lab"/);
+  assert.match(bar, /<span class="action-bar-text" data-variant-lab>/);
+  assert.match(bar, /data-variant-lab href="https:\/\/klubizz\.com\/@dembs-lab"/);
+  assert.match(bar, /<span class="action-bar-text" data-variant-cadrage hidden>/);
   assert.match(bar, /<span class="action-bar-text" data-variant-audit hidden>/);
-  assert.match(bar, /data-variant-cadrage href="https:\/\/cal\.com\/dembs\/cadrage-app"/);
+  assert.match(bar, /data-variant-cadrage hidden href="https:\/\/cal\.com\/dembs\/cadrage-app"/);
   assert.match(bar, /data-variant-audit hidden href="https:\/\/cal\.com\/dembs\/audit-stores"/);
+  assert.match(html, /<section id="services"[^>]*data-action="cadrage"/);
   assert.match(html, /<article id="audit"[^>]*data-action="audit"/);
 });
 
@@ -253,19 +285,20 @@ test("the Civi tile ships the supplied application icon", () => {
   assert.match(html, /src="assets\/icons\/civi\.png\?v=20260903"/);
 });
 
-test("the menu carries the booking action and a labelled toggle icon", () => {
+test("the menu carries the Lab action and a labelled toggle icon", () => {
   const menu = html.match(/<nav id="site-menu"[\s\S]*?<\/nav>/)?.[0] ?? "";
-  assert.match(menu, /class="menu-cta"[^>]*href="https:\/\/cal\.com\/dembs\/cadrage-app"/);
+  assert.match(menu, /class="menu-cta"[^>]*href="https:\/\/klubizz\.com\/@dembs-lab"/);
   // Three bars that CSS crosses into an X, rather than a bare glyph.
   assert.match(html, /<span class="menu-icon" aria-hidden="true"><span><\/span><span><\/span><span><\/span><\/span>/);
   assert.doesNotMatch(html, /☰/);
 });
 
-test("the Motion Stack waiting list sits in its own section right under the hero", () => {
+test("the Lab leads the homepage sections before Motion Stack and the journeys", () => {
   const heroIndex = html.indexOf('<section class="hero">');
+  const labIndex = html.indexOf('<section id="lab"');
   const motionIndex = html.indexOf('<section id="motion-stack"');
   const journeysIndex = html.indexOf('<section id="journeys"');
-  assert.ok(heroIndex > -1 && motionIndex > heroIndex && journeysIndex > motionIndex, "hero, then motion-stack, then journeys");
+  assert.ok(heroIndex > -1 && labIndex > heroIndex && motionIndex > labIndex && journeysIndex > motionIndex, "hero, then Lab, then Motion Stack, then journeys");
   const motion = html.match(/<section id="motion-stack"[\s\S]*?<\/section>/)?.[0] ?? "";
   assert.match(motion, /<div class="card-grid">\s*<a class="soon"/);
   assert.match(motion, /liste d’attente est ouverte/);

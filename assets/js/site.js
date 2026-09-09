@@ -219,13 +219,14 @@ export function renderFocusCampaign(root = document, search = location.search) {
 export function setActionBarVariant(bar, variant) {
   if (!bar) return;
   bar.dataset.variant = variant;
-  bar.querySelectorAll("[data-variant-cadrage]").forEach((node) => { node.hidden = variant !== "cadrage"; });
-  bar.querySelectorAll("[data-variant-audit]").forEach((node) => { node.hidden = variant !== "audit"; });
+  for (const name of ["lab", "cadrage", "audit"]) {
+    bar.querySelectorAll(`[data-variant-${name}]`).forEach((node) => { node.hidden = variant !== name; });
+  }
 }
 
 export function initActionBar(root = document) {
   const bar = root.querySelector("[data-action-bar]");
-  const targets = [...root.querySelectorAll('[data-action="audit"]')];
+  const targets = [...root.querySelectorAll("[data-action]")];
   if (!bar || !targets.length) return;
   const view = root.defaultView ?? window;
   const Observer = view.IntersectionObserver ?? window.IntersectionObserver;
@@ -236,7 +237,8 @@ export function initActionBar(root = document) {
       if (entry.isIntersecting) visible.add(entry.target);
       else visible.delete(entry.target);
     }
-    setActionBarVariant(bar, visible.size ? "audit" : "cadrage");
+    const variants = [...visible].map((target) => target.dataset.action);
+    setActionBarVariant(bar, variants.includes("audit") ? "audit" : variants.includes("cadrage") ? "cadrage" : "lab");
   }, { threshold: 0.35 });
   targets.forEach((target) => observer.observe(target));
 }
