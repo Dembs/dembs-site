@@ -47,10 +47,18 @@ export const CAMPAIGNS = Object.freeze({
     cta: "Lire le guide gratuit",
     url: "https://ressources.dembs.fr/guide",
     affiliate: false
-  })
+  }),
+  // The course already has its own section on the page: the campaign skips the card
+  // that would repeat it and takes the visitor straight there.
+  "motion-stack": Object.freeze({ section: "motion-stack" })
 });
 
+function isSectionCampaign(value) {
+  return Boolean(value) && typeof value === "object" && typeof value.section === "string" && /^[a-z][a-z0-9-]*$/.test(value.section);
+}
+
 function isCompleteCampaign(value) {
+  if (isSectionCampaign(value)) return true;
   if (!value || typeof value !== "object") return false;
   const textFields = ["eyebrow", "title", "description", "cta"];
   if (!textFields.every((key) => typeof value[key] === "string" && value[key].trim())) return false;

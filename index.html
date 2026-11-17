@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Dembs, développeur d’applications</title>
-  <meta name="description" content="Dembs crée des applications, les mène jusqu’aux stores et accompagne les personnes qui veulent lancer la leur.">
+  <meta name="description" content="Dembs crée des applications, les mène jusqu’aux stores et enseigne le montage vidéo par Claude Code avec Motion Stack, sa formation.">
   <meta name="theme-color" content="#ffffff">
   <link rel="canonical" href="https://dembs.fr/">
   <meta property="og:type" content="website">
@@ -22,7 +22,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/bricolage-grotesque-400-800.woff2" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/ibm-plex-sans-400-700.woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/fonts.css">
-  <link rel="stylesheet" href="assets/css/site.css?v=20260909-lab-4">
+  <link rel="stylesheet" href="assets/css/site.css?v=20261117-motion-3">
   <script type="module" src="assets/js/site.js"></script>
   <!-- Mesure d’audience sans cookie ni identifiant personnel (Umami Cloud), déclarée dans les mentions légales. -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="ec731288-9516-4e50-88cb-d014819a7fbc"></script>
@@ -35,12 +35,13 @@
   </header>
   <div class="menu-scrim" data-menu-close hidden></div>
   <nav id="site-menu" class="menu-panel" aria-label="Navigation principale" hidden>
-    <a href="#lab">Dembs Lab</a><a href="#motion-stack">Montage vidéo</a><a href="#apps">Applications</a><a href="#services">Accompagnements</a><a href="#resources">Ressources</a><a href="#recommendations">Matériel</a><a href="#about">Qui parle</a>
+    <a href="#motion-stack">Montage vidéo</a><a href="#lab">Dembs Lab</a><a href="#apps">Applications</a><a href="#services">Accompagnements</a><a href="#resources">Ressources</a><a href="#recommendations">Matériel</a><a href="#about">Qui parle</a>
     <a class="menu-cta" href="https://klubizz.com/@dembs-lab" target="_blank" rel="noopener">Rejoindre le Lab</a>
   </nav>
   <main id="main-content">
     <section class="hero">
       <div class="hero-copy">
+        <a class="hero-news" href="#motion-stack"><span class="hero-news-tag">Nouveau</span><span class="hero-news-text">Motion Stack, la formation</span><span class="hero-news-arrow" aria-hidden="true"></span></a>
         <p class="eyebrow">Développeur d’applications</p>
         <h1>Je crée des apps. Et je les mène jusqu’aux stores.</h1>
         <p class="lead">Je partage le processus et j’accompagne ceux qui veulent lancer la leur.</p>
@@ -58,7 +59,59 @@
       </figure>
     </section>
 
-    <section id="lab" class="lab-portal" data-reveal data-reveal-index="0">
+    <aside id="campaign" class="campaign" hidden data-reveal data-reveal-index="0">
+      <p data-campaign-eyebrow></p><h2 data-campaign-title></h2><p data-campaign-description></p><p data-campaign-affiliate hidden>Lien affilié</p><a data-campaign-link target="_blank" rel="noopener"></a>
+    </aside>
+
+    <!-- Motion Stack, la formation : mise en avant juste sous le hero, avant le Lab qui l’héberge.
+         Pas de fond à bords francs : une lueur cobalt et violette qui se fond dans la page claire. -->
+    <section id="motion-stack" class="ms" aria-labelledby="ms-title">
+      <div class="ms-top">
+        <div class="ms-copy" data-reveal data-reveal-index="0">
+          <p class="ms-kicker"><span class="ms-badge">Nouveau</span>La formation Motion Stack</p>
+          <h2 id="ms-title">Tes vidéos, montées par <em>Claude Code</em>.</h2>
+          <p class="ms-lead">Sous-titres, animations qui suivent ce que tu dis, avatar pixel qui court sur la barre de chargement, objets réels qui deviennent leur jumeau 3D. Sans logiciel de montage&nbsp;: tu parles à Claude, en français.</p>
+          <div class="ms-actions">
+            <a class="button ms-cta" href="https://klubizz.com/@dembs-lab/contenus" target="_blank" rel="noopener">Voir la formation dans le Lab</a>
+            <span class="ms-where">En vente dans l’onglet Contenus</span>
+          </div>
+        </div>
+        <div class="ms-timeline" data-action="motion" data-reveal data-reveal-index="1">
+          <div class="ms-ruler" aria-hidden="true"><span>Pistes</span><span class="ms-scale"><span>00:00</span><span>00:05</span><span>00:10</span><span>00:15</span></span></div>
+          <div class="ms-track ms-track-subs" aria-hidden="true"><span class="ms-track-name" data-short="ST">Sous-titres</span><span class="ms-lane"><i>Tes</i><i>vidéos</i><i>montées</i><i>par</i><i>Claude</i></span></div>
+          <ul class="ms-uses" aria-label="Pour quoi faire">
+            <li class="ms-track ms-track-anim"><span class="ms-track-name" data-short="AN" aria-hidden="true">Animations</span><span class="ms-lane"><span class="ms-clip"><span class="ms-tc" aria-hidden="true">00:01</span>Montrer ton app en action</span><span class="ms-ghost" aria-hidden="true"></span></span></li>
+            <li class="ms-track ms-track-3d"><span class="ms-track-name" data-short="3D" aria-hidden="true">3D</span><span class="ms-lane"><span class="ms-ghost" aria-hidden="true"></span><span class="ms-clip"><span class="ms-tc" aria-hidden="true">00:05</span>Présenter un produit en 3D</span></span></li>
+            <li class="ms-track ms-track-video"><span class="ms-track-name" data-short="V1" aria-hidden="true">Vidéo</span><span class="ms-lane"><span class="ms-clip"><span class="ms-tc" aria-hidden="true">00:00</span>Donner du rythme à tes vidéos face caméra</span></span></li>
+          </ul>
+          <span class="ms-playhead" aria-hidden="true"><i></i></span>
+        </div>
+      </div>
+      <div class="ms-inside" data-action="motion" data-reveal data-reveal-index="0">
+        <h3>Ce qu’il y a dedans</h3>
+        <ul class="ms-cards">
+          <li data-reveal data-reveal-index="0"><img src="assets/img/ms-skills.webp" alt="" width="640" height="374" loading="lazy"><strong>Mes skills Claude Code</strong><span>Les mêmes que pour mes vidéos.</span></li>
+          <li data-reveal data-reveal-index="1"><img src="assets/img/ms-prompts.webp" alt="" width="640" height="374" loading="lazy"><strong>Tous mes prompts</strong><span>Prêts à copier.</span></li>
+          <li data-reveal data-reveal-index="2"><img src="assets/img/ms-lecons.webp" alt="" width="640" height="374" loading="lazy"><strong>Le kit et les leçons</strong><span>Pas à pas, de l’installation au montage complet.</span></li>
+          <li data-reveal data-reveal-index="3"><img src="assets/img/ms-3d.webp" alt="" width="640" height="374" loading="lazy"><strong>Le module 3D</strong><span>Objets en 3D, objets qui se matérialisent et effets spéciaux.</span></li>
+        </ul>
+      </div>
+      <div class="ms-run" data-action="motion" data-reveal data-reveal-index="0">
+        <h3>Le parcours</h3>
+        <div class="ms-course">
+          <span class="ms-kuts" aria-hidden="true"></span>
+          <div class="ms-bar" aria-hidden="true"></div>
+          <ol class="ms-path" aria-label="Le parcours, en trois mondes">
+            <li><span>Monde 0</span><strong>L’installation</strong></li>
+            <li><span>Monde 1</span><strong>Ton avatar animé</strong></li>
+            <li><span>Monde 2</span><strong>Le montage animé</strong></li>
+          </ol>
+        </div>
+        <a class="button ms-cta" href="https://klubizz.com/@dembs-lab/contenus" target="_blank" rel="noopener">Voir la formation dans le Lab</a>
+      </div>
+    </section>
+
+    <section id="lab" class="lab-portal" data-reveal data-reveal-index="1">
       <div class="lab-panel">
         <svg class="lab-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
           <g class="lab-liquid-group"><path class="lab-mark-liquid" d="M20 43h24l3 5c1 2-1 4-4 4H21c-3 0-5-2-4-4Z" /></g>
@@ -81,50 +134,7 @@
       </div>
     </section>
 
-    <aside id="campaign" class="campaign" hidden data-reveal data-reveal-index="1">
-      <p data-campaign-eyebrow></p><h2 data-campaign-title></h2><p data-campaign-description></p><p data-campaign-affiliate hidden>Lien affilié</p><a data-campaign-link target="_blank" rel="noopener"></a>
-    </aside>
-
-    <!-- Motion Stack reste mis en avant juste après le portail du Lab pendant la campagne vidéo. -->
-    <section id="motion-stack" class="band" data-reveal data-reveal-index="2">
-      <p class="eyebrow">Nouveau · Motion Stack</p><h2>La liste d’attente est ouverte</h2>
-      <div class="card-grid">
-        <a class="soon" data-reveal data-reveal-index="0" data-motion-mascot href="https://ressources.dembs.fr/motion-stack">
-          <div class="soon-copy"><p class="meta">Liste d’attente ouverte</p><h3>Montage vidéo accéléré par l’IA</h3><p class="soon-description">Produire tes vidéos plus vite, sans y passer tes soirées. Découvre Motion Stack et rejoins la liste d’attente.</p><span class="soon-action">Découvrir Motion Stack <span aria-hidden="true">→</span></span></div>
-          <span class="motion-mascot-stage" aria-hidden="true">
-            <span class="motion-chip motion-chip-cc">CC</span><span class="motion-chip motion-chip-fx">FX</span>
-            <span class="motion-frame"></span>
-            <span class="motion-wave"><i></i><i></i><i></i><i></i><i></i></span>
-            <span class="motion-spark"></span>
-            <span class="motion-clapper">
-              <svg viewBox="0 0 64 52" focusable="false">
-                <rect class="motion-clapper-body" x="11" y="22" width="42" height="24" rx="4" />
-                <path class="motion-clapper-detail" d="M17 29 H47 M17 35 H39" />
-                <g class="motion-clapper-slate">
-                  <rect x="10" y="11" width="44" height="11" rx="2.5" />
-                  <path d="M19 12 L13 21 M31 12 L25 21 M43 12 L37 21 M53 13 L47 21" />
-                </g>
-              </svg>
-            </span>
-            <svg class="motion-mascot" viewBox="-137.5 -127.5 275 217" focusable="false">
-              <ellipse class="motion-shadow" cx="0" cy="80" rx="86" ry="8" />
-              <g class="motion-freddy-body">
-                <rect x="-122.8" y="-112.8" width="81.6" height="81.6" rx="40.8" />
-                <rect x="41.2" y="-112.8" width="81.6" height="81.6" rx="40.8" />
-                <rect x="-30.763" y="-103.731" width="59.484" height="63.461" rx="29.742" />
-                <rect x="-87.366" y="-74.737" width="174.732" height="149.475" rx="66.58" ry="56.96" />
-              </g>
-              <g class="motion-freddy-eyes" data-motion-face>
-                <rect class="motion-freddy-eye motion-freddy-eye-left" x="-52.745" y="-34.73" width="28.935" height="60.839" rx="14.467" />
-                <rect class="motion-freddy-eye motion-freddy-eye-right" x="23.57" y="-34.73" width="28.935" height="60.839" rx="14.467" />
-              </g>
-            </svg>
-          </span>
-        </a>
-      </div>
-    </section>
-
-    <section id="journeys" data-reveal data-reveal-index="3">
+    <section id="journeys" data-reveal data-reveal-index="2">
       <p class="eyebrow">Ton point de départ</p><h2>Tu en es où ?</h2>
       <div class="journey-list">
         <a href="#cadrage" data-reveal data-reveal-index="0"><strong>J’ai une idée d’app</strong><span>Cadrer avant de construire</span></a>
@@ -133,7 +143,7 @@
       </div>
     </section>
 
-    <section id="apps" class="band" data-reveal data-reveal-index="4">
+    <section id="apps" class="band" data-reveal data-reveal-index="3">
       <p class="eyebrow">La preuve par les produits</p><h2>Les apps</h2>
       <p class="lead">Le code et les stores, je ne les connais pas qu’en théorie.</p>
       <div id="app-grid" class="app-grid" role="group" aria-label="Choisir une application">
@@ -152,7 +162,7 @@
       <p class="developer-path">Dans la data au quotidien, formé au développement, quatre apps au compteur.</p>
     </section>
 
-    <section id="services" data-reveal data-reveal-index="5" data-action="cadrage">
+    <section id="services" data-reveal data-reveal-index="4" data-action="cadrage">
       <p class="eyebrow">Accompagnements</p><h2>Un format pour avancer</h2>
       <p class="lead">Deux appels, deux moments. Avant de construire, et avant de soumettre.</p>
       <div class="card-grid">
@@ -173,7 +183,7 @@
       </div>
     </section>
 
-    <section id="about" class="band" data-reveal data-reveal-index="6">
+    <section id="about" class="band" data-reveal data-reveal-index="5">
       <div class="about-card">
         <picture class="about-portrait">
           <source srcset="assets/img/demba-avatar.webp" type="image/webp">
@@ -198,12 +208,12 @@
       </div>
     </section>
 
-    <section id="resources" data-reveal data-reveal-index="7">
+    <section id="resources" data-reveal data-reveal-index="6">
       <p class="eyebrow">Ressource gratuite</p><h2>Pour avancer seul</h2>
       <article class="resource-card"><h3>Publier sans se faire recaler</h3><p>Les erreurs qui coûtent des semaines sur l’App Store et Google Play.</p><a class="button light" href="https://ressources.dembs.fr/guide" target="_blank" rel="noopener">Lire le guide</a></article>
     </section>
 
-    <section id="recommendations" class="band gear-section" data-reveal data-reveal-index="8">
+    <section id="recommendations" class="band gear-section" data-reveal data-reveal-index="7">
       <p class="eyebrow">Derrière mes vidéos</p>
       <h2>Le matériel que j’utilise</h2>
       <p class="lead">Mon setup pour filmer, éclairer et stocker mes projets. C’est le matériel qui m’accompagne vraiment au quotidien.</p>
@@ -288,7 +298,9 @@
     <span class="action-bar-text" data-variant-lab><strong>Dembs Lab</strong><span>Retours, ressources et entraide</span></span>
     <span class="action-bar-text" data-variant-cadrage hidden><strong>Un projet d’app ?</strong><span>Appel de cadrage · 45 min · 49 €</span></span>
     <span class="action-bar-text" data-variant-audit hidden><strong>Une app presque prête ?</strong><span>Audit avant les stores · 60 min · 129 €</span></span>
+    <span class="action-bar-text" data-variant-motion hidden><strong>Motion Stack</strong><span>La formation, dans le Dembs Lab</span></span>
     <a class="button primary" data-variant-lab href="https://klubizz.com/@dembs-lab" target="_blank" rel="noopener">Rejoindre</a>
+    <a class="button primary" data-variant-motion hidden href="https://klubizz.com/@dembs-lab/contenus" target="_blank" rel="noopener">Découvrir</a>
     <a class="button primary" data-variant-cadrage hidden href="https://cal.com/dembs/cadrage-app" target="_blank" rel="noopener">Réserver</a>
     <a class="button primary" data-variant-audit hidden href="https://cal.com/dembs/audit-stores" target="_blank" rel="noopener">Réserver</a>
   </div>

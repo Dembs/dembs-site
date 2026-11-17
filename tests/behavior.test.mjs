@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { getMascotGaze, initActionBar, initAppPicker, initMenu, initReveals, initMotionMascot, revealDelay, selectApp, setActionBarVariant } from "../assets/js/site.js";
+import { initActionBar, initAppPicker, initMenu, initReveals, pickActionVariant, renderFocusCampaign, revealDelay, selectApp, setActionBarVariant } from "../assets/js/site.js";
 
 const css = await readFile(new URL("../assets/css/site.css", import.meta.url), "utf8");
 
@@ -38,11 +38,13 @@ function makeDetailRoot() {
     ["[data-app-stores]", { hidden: false }],
     ["[data-app-status]", { hidden: true, textContent: "" }],
     ["[data-app-store]", { href: "" }],
-    ["[data-play-store]", { href: "" }]
+    ["[data-play-store]", { href: "" }],
+    ["[data-app-web]", { hidden: true, href: "", textContent: "" }]
   ]);
   const properties = new Map();
   const detail = {
     classList: makeClassList(),
+    dataset: {},
     querySelector: (selector) => fields.get(selector),
     style: { setProperty: (name, value) => properties.set(name, value) }
   };
@@ -121,56 +123,6 @@ test("reveal staggering is capped to keep the page responsive", () => {
   assert.equal(revealDelay(0), 0);
   assert.equal(revealDelay(2), 140);
   assert.equal(revealDelay(9), 280);
-});
-
-test("the Motion Stack mascot gaze is centred and clamped inside its face", () => {
-  const face = { left: 100, top: 50, width: 80, height: 60 };
-
-  assert.deepEqual(getMascotGaze(face, { clientX: 140, clientY: 80 }), { x: 0, y: 0 });
-  assert.deepEqual(getMascotGaze(face, { clientX: 999, clientY: -999 }), { x: 8, y: -8 });
-  assert.deepEqual(getMascotGaze(face, { clientX: -999, clientY: 999 }), { x: -8, y: 8 });
-});
-
-test("the Motion Stack mascot follows the pointer and recentres when it leaves", () => {
-  const listeners = new Map();
-  const properties = new Map();
-  const face = { getBoundingClientRect: () => ({ left: 100, top: 50, width: 80, height: 60 }) };
-  const card = {
-    addEventListener(type, listener) { listeners.set(type, listener); },
-    querySelector(selector) { return selector === "[data-motion-face]" ? face : null; },
-    style: { setProperty(name, value) { properties.set(name, value); } }
-  };
-  const root = {
-    defaultView: { matchMedia: () => ({ matches: false }) },
-    querySelector(selector) { return selector === "[data-motion-mascot]" ? card : null; }
-  };
-
-  initMotionMascot(root);
-  listeners.get("pointermove")({ clientX: 999, clientY: -999 });
-  assert.equal(properties.get("--gaze-x"), "8px");
-  assert.equal(properties.get("--gaze-y"), "-8px");
-
-  listeners.get("pointerleave")();
-  assert.equal(properties.get("--gaze-x"), "0px");
-  assert.equal(properties.get("--gaze-y"), "0px");
-});
-
-test("the Motion Stack mascot does not track touch on coarse-pointer devices", () => {
-  const listeners = new Map();
-  const face = { getBoundingClientRect: () => ({ left: 100, top: 50, width: 80, height: 60 }) };
-  const card = {
-    addEventListener(type, listener) { listeners.set(type, listener); },
-    querySelector(selector) { return selector === "[data-motion-face]" ? face : null; },
-    style: { setProperty() {} }
-  };
-  const root = {
-    defaultView: { matchMedia: (query) => ({ matches: query === "(pointer: coarse)" }) },
-    querySelector(selector) { return selector === "[data-motion-mascot]" ? card : null; }
-  };
-
-  initMotionMascot(root);
-
-  assert.equal(listeners.size, 0);
 });
 
 test("reveals assign capped delays and become visible only once observed", () => {
@@ -291,6 +243,7 @@ test("app selection reveals store links or an explicit unpublished status", () =
     selectApp("streetpark", root);
     assert.equal(root.fields.get("[data-app-stores]").hidden, false);
     assert.equal(root.fields.get("[data-app-status]").hidden, true);
+    assert.equal(root.fields.get("[data-app-web]").hidden, true);
     assert.match(root.fields.get("[data-app-store]").href, /^https:\/\/apps\.apple\.com/);
     assert.match(root.fields.get("[data-play-store]").href, /^https:\/\/play\.google\.com/);
 
@@ -298,6 +251,8 @@ test("app selection reveals store links or an explicit unpublished status", () =
     assert.equal(root.fields.get("[data-app-stores]").hidden, true);
     assert.equal(root.fields.get("[data-app-status]").hidden, false);
     assert.equal(root.fields.get("[data-app-status]").textContent, "Bêta, bientôt sur les stores");
+    // No app has a site of its own: the optional web link never shows.
+    assert.equal(root.fields.get("[data-app-web]").hidden, true);
     assert.equal(root.buttons[0].attributes.get("aria-current"), "false");
     assert.equal(root.buttons[1].attributes.get("aria-current"), "true");
     assert.equal(root.detail.classList.contains("is-entering"), true);
@@ -325,9 +280,10 @@ test("the app card keeps the site palette and only tints itself with the app col
   assert.match(css, /\.app-detail \[data-app-status\] \{[^}]*color: var\(--slate\)/);
 });
 
-test("the action bar switches between the Lab, cadrage and audit paths", () => {
+test("the action bar switches between the Lab, Motion Stack, cadrage and audit paths", () => {
   const nodes = {
     lab: [{ hidden: false }, { hidden: false }],
+    motion: [{ hidden: true }, { hidden: true }],
     cadrage: [{ hidden: false }, { hidden: false }],
     audit: [{ hidden: true }, { hidden: true }]
   };
@@ -344,10 +300,26 @@ test("the action bar switches between the Lab, cadrage and audit paths", () => {
   assert.deepEqual(nodes.lab.map((n) => n.hidden), [true, true]);
   assert.deepEqual(nodes.cadrage.map((n) => n.hidden), [false, false]);
   assert.deepEqual(nodes.audit.map((n) => n.hidden), [true, true]);
+  assert.deepEqual(nodes.motion.map((n) => n.hidden), [true, true]);
+  setActionBarVariant(bar, "motion");
+  assert.equal(bar.dataset.variant, "motion");
+  assert.deepEqual(nodes.motion.map((n) => n.hidden), [false, false]);
+  assert.deepEqual(nodes.lab.map((n) => n.hidden), [true, true]);
+  assert.deepEqual(nodes.cadrage.map((n) => n.hidden), [true, true]);
   setActionBarVariant(bar, "lab");
   assert.deepEqual(nodes.lab.map((n) => n.hidden), [false, false]);
+  assert.deepEqual(nodes.motion.map((n) => n.hidden), [true, true]);
   assert.deepEqual(nodes.cadrage.map((n) => n.hidden), [true, true]);
   assert.deepEqual(nodes.audit.map((n) => n.hidden), [true, true]);
+});
+
+test("the action bar prefers the most specific offer on screen", () => {
+  assert.equal(pickActionVariant([]), "lab");
+  assert.equal(pickActionVariant(["motion"]), "motion");
+  assert.equal(pickActionVariant(["motion", "motion"]), "motion");
+  assert.equal(pickActionVariant(["motion", "cadrage"]), "cadrage");
+  assert.equal(pickActionVariant(["cadrage", "audit", "motion"]), "audit");
+  assert.equal(pickActionVariant(["unknown"]), "lab");
 });
 
 test("the action bar follows services and returns to the Lab outside them", () => {
@@ -357,17 +329,28 @@ test("the action bar follows services and returns to the Lab outside them", () =
     constructor(cb) { callback = cb; }
     observe(target) { observed.push(target); }
   }
+  const stage = { dataset: { action: "motion" } };
+  const contents = { dataset: { action: "motion" } };
   const services = { dataset: { action: "cadrage" } };
   const audit = { dataset: { action: "audit" } };
-  const nodes = { lab: [{ hidden: false }], cadrage: [{ hidden: true }], audit: [{ hidden: true }] };
+  const nodes = { lab: [{ hidden: false }], motion: [{ hidden: true }], cadrage: [{ hidden: true }], audit: [{ hidden: true }] };
   const bar = { dataset: {}, querySelectorAll: (selector) => nodes[selector.match(/data-variant-(\w+)/)?.[1]] ?? [] };
   const root = {
     defaultView: { IntersectionObserver: FakeObserver },
     querySelector: (selector) => selector === "[data-action-bar]" ? bar : null,
-    querySelectorAll: (selector) => selector === "[data-action]" ? [services, audit] : []
+    querySelectorAll: (selector) => selector === "[data-action]" ? [stage, contents, services, audit] : []
   };
   initActionBar(root);
-  assert.deepEqual(observed, [services, audit]);
+  assert.deepEqual(observed, [stage, contents, services, audit]);
+  // The course has two targets (the phone, then its contents); the bar stays on it
+  // while either one is on screen.
+  callback([{ target: stage, isIntersecting: true }]);
+  assert.equal(bar.dataset.variant, "motion");
+  assert.equal(nodes.motion[0].hidden, false);
+  callback([{ target: contents, isIntersecting: true }, { target: stage, isIntersecting: false }]);
+  assert.equal(bar.dataset.variant, "motion");
+  callback([{ target: contents, isIntersecting: false }]);
+  assert.equal(bar.dataset.variant, "lab");
   callback([{ target: services, isIntersecting: true }]);
   assert.equal(bar.dataset.variant, "cadrage");
   callback([{ target: audit, isIntersecting: true }]);
@@ -395,7 +378,8 @@ test("decorative artwork cannot create horizontal scrolling on mobile", () => {
 });
 
 test("the Lab section uses the quiet page palette with cobalt reserved for emphasis", () => {
-  assert.match(css, /\.lab-portal\s*\{[^}]*background:\s*var\(--band\)[^}]*color:\s*var\(--ink\)/);
+  assert.match(css, /\.lab-portal \{ color: var\(--ink\); \}/);
+  assert.match(css, /\.lab-portal::before \{[^}]*var\(--band\)/);
   assert.doesNotMatch(css, /\.lab-console|\.lab-bubble|\.lab-readout/);
 });
 
@@ -406,11 +390,122 @@ test("the Lab comes alive once with a six-second liquid accent and staggered ben
   assert.match(css, /\.lab-benefits li:nth-child\(3\)\s*\{[^}]*animation-delay:/);
 });
 
-test("the Motion Stack clapper uses one restrained closing animation", () => {
-  assert.match(css, /\.motion-clapper\s*\{[^}]*animation:\s*clapper-float/);
-  assert.match(css, /\.motion-clapper-slate\s*\{[^}]*animation:\s*clapper-close 2\.8s/);
-  assert.match(css, /@keyframes clapper-close/);
-  assert.doesNotMatch(css, /scissors-(?:float|cut)/);
+test("Kuts is a pixel sprite, drawn at a whole multiple of its 60 x 53 frames", () => {
+  // 2x: 120 x 106, eight frames on one strip, never smoothed.
+  assert.match(css, /\.ms-run \{[^}]*--kw: 120px; --kh: 106px;/);
+  const kuts = css.match(/\.ms-kuts \{[^}]*\}/)?.[0] ?? "";
+  assert.match(kuts, /url\("\.\.\/img\/kuts-pixel\.png"\)/);
+  assert.match(kuts, /calc\(var\(--kw\) \* 8\) var\(--kh\)/);
+  assert.match(kuts, /image-rendering: pixelated/);
+});
+
+test("Kuts runs the loading bar once, in steps, and rests on its final pose", () => {
+  assert.match(css, /\.reveal-enabled \.ms-run\.is-visible \.ms-kuts \{ animation: kuts-pose 6s step-end [^;]*kuts-travel 3\.6s steps\(18, end\)[^;]*kuts-hop \.45s step-end 1\.7s 8/);
+  assert.match(css, /\.reveal-enabled \.ms-run\.is-visible \.ms-bar::before \{ animation: bar-fill 3\.6s steps\(18, end\)/);
+  for (const name of ["kuts-pose", "kuts-travel", "kuts-hop", "kuts-idle", "bar-fill"]) assert.match(css, new RegExp(`@keyframes ${name} `));
+  // Without the animation (reduced motion, no reveals) Kuts already stands at the end of the bar.
+  assert.match(css, /\.ms-kuts \{[^}]*left: calc\(100% - var\(--kw\)\)/);
+  // It points at the button only where the button stands beside the bar.
+  assert.match(css, /\.ms-run \{[^}]*--end: 0;/);
+  const tablet = css.match(/@media \(min-width: 760px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  assert.match(tablet, /\.ms-run \{ --end: 7; grid-template-columns:/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\*, \*::before, \*::after \{[^}]*animation-duration: 0\.01ms !important/);
+});
+
+test("the old vector mascot, its bubble and the promo video are gone", () => {
+  assert.doesNotMatch(css, /motion-mascot|motion-freddy|ms-paws|ms-chip|ms-stage|ms-phone|ms-video|kuts-peek|is-playing/);
+  assert.doesNotMatch(css, /\.card-grid \.soon|motion-clapper|motion-mascot-stage|clapper-close/);
+});
+
+test("Motion Stack is a glow on the light page, never a slab with hard edges", () => {
+  const ms = css.match(/\.ms \{[^}]*\}/)?.[0] ?? "";
+  const glow = css.match(/\.ms::before \{[^}]*\}/)?.[0] ?? "";
+  assert.doesNotMatch(ms, /background/);
+  assert.match(glow, /radial-gradient/);
+  assert.doesNotMatch(glow, /linear-gradient\(180deg, var\(--marine\)|var\(--night\)/);
+  assert.match(glow, /mask-image: linear-gradient\(180deg, transparent, #000 16%, #000 84%, transparent\)/);
+  // Grey bands fade in and out from white instead of starting on a hard line.
+  assert.match(css, /\.band::before, \.lab-portal::before \{[^}]*linear-gradient\(180deg, rgb\(247 249 252 \/ 0\), var\(--band\)/);
+  assert.doesNotMatch(css, /box-shadow: 0 0 0 100vmax/);
+  // The closing invite is a rounded card in the column, not a full-width dark floor.
+  assert.match(css, /\.footer-invite \{[^}]*border-radius: 1\.5rem/);
+  assert.doesNotMatch(css, /\.footer-invite::before/);
+});
+
+test("the edit timeline sweeps one playhead and holds still under reduced motion", () => {
+  assert.match(css, /\.ms-playhead i \{[^}]*left: 46%;[^}]*animation: ms-sweep 18s linear infinite/);
+  assert.match(css, /@keyframes ms-sweep \{ from \{ left: 0; \} to \{ left: 100%; \} \}/);
+});
+
+test("the headline keeps \"Claude Code\" on one slab and only goes two columns with room", () => {
+  assert.match(css, /\.ms h2 em \{[^}]*white-space: nowrap/);
+  // Between 760 and 1000 px a side-by-side layout squeezed the title onto 7 lines.
+  const tablet = css.match(/@media \(min-width: 760px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  assert.doesNotMatch(tablet, /\.ms-top \{/);
+  assert.match(css, /@media \(min-width: 1000px\) \{\s*\.ms-top \{ grid-template-columns:/);
+});
+
+test("revealing cards keep their own hover lift and easing", () => {
+  // The reveal sets transform and transition; hover moves with translate instead.
+  for (const selector of [/\.ms-cards li:hover \{[^}]*translate: 0 -3px/, /\.card-grid article:hover \{[^}]*translate: 0 -2px/, /\.gear-feature:hover \{[^}]*translate: 0 -2px/]) {
+    assert.match(css, selector);
+  }
+  assert.match(css, /\.ms-cards li\[data-reveal\], \.card-grid article\[data-reveal\], \.gear-feature\[data-reveal\] \{ transition:[^}]*translate 180ms/);
+});
+
+test("focus keeps the site-wide cobalt ring and every anchor clears the header", () => {
+  assert.match(css, /^:focus-visible \{ outline: 3px solid var\(--cobalt\); outline-offset: 3px; \}/m);
+  assert.doesNotMatch(css, /\.ms :focus-visible/);
+  assert.match(css, /main > section\[id\] \{ scroll-margin-top: var\(--header-h\); \}/);
+});
+
+function makeCampaignRoot() {
+  const slots = new Map(["[data-campaign-eyebrow]", "[data-campaign-title]", "[data-campaign-description]", "[data-campaign-link]", "[data-campaign-affiliate]"]
+    .map((selector) => [selector, { textContent: "", href: "", hidden: true }]));
+  const container = { hidden: true, querySelector: (selector) => slots.get(selector) };
+  const scrolls = [];
+  const section = { scrollIntoView: (options) => scrolls.push(options) };
+  let fontsReady;
+  const view = { scrollY: 1130 };
+  const root = {
+    defaultView: view,
+    fonts: { ready: new Promise((resolve) => { fontsReady = resolve; }) },
+    querySelector: (selector) => selector === "#campaign" ? container : null,
+    getElementById: (id) => id === "motion-stack" ? section : null
+  };
+  return { container, root, scrolls, slots, view, fontsReady: () => fontsReady() };
+}
+
+test("the Motion Stack campaign lands on the section instead of repeating it in a card", async () => {
+  const { container, root, scrolls, fontsReady } = makeCampaignRoot();
+  renderFocusCampaign(root, "?focus=motion-stack");
+  assert.equal(container.hidden, true);
+  assert.deepEqual(scrolls, [{ block: "start", behavior: "instant" }]);
+  // Once the web fonts have swapped in, it lands again in case the section moved.
+  fontsReady();
+  await root.fonts.ready;
+  assert.equal(scrolls.length, 2);
+});
+
+test("a visitor who already scrolled is not pulled back when the fonts arrive", async () => {
+  const { root, scrolls, view, fontsReady } = makeCampaignRoot();
+  renderFocusCampaign(root, "?focus=motion-stack");
+  view.scrollY = 1600;
+  fontsReady();
+  await root.fonts.ready;
+  assert.equal(scrolls.length, 1);
+});
+
+test("a card campaign still fills and shows its card without scrolling anywhere", () => {
+  const { container, root, scrolls, slots } = makeCampaignRoot();
+  renderFocusCampaign(root, "?focus=guide-stores");
+  assert.equal(container.hidden, false);
+  assert.equal(slots.get("[data-campaign-title]").textContent, "Publier sans se faire recaler");
+  assert.equal(slots.get("[data-campaign-link]").href, "https://ressources.dembs.fr/guide");
+  assert.deepEqual(scrolls, []);
+  renderFocusCampaign(root, "?focus=unknown");
+  assert.equal(container.hidden, true);
+  assert.deepEqual(scrolls, []);
 });
 
 function withObserverStub(run) {

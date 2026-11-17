@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const civiIcon = await readFile(new URL("../assets/icons/civi.png", import.meta.url));
@@ -13,7 +13,7 @@ test("homepage contains the validated positioning and section contracts", () => 
   assert.match(html, /Développeur d’applications/);
   assert.match(html, /Je crée des apps\. Et je les mène jusqu’aux stores\./);
   assert.match(html, /Je partage le processus et j’accompagne ceux qui veulent lancer la leur\./);
-  for (const id of ["site-menu", "lab", "campaign", "journeys", "apps", "app-detail", "services", "resources", "recommendations"]) {
+  for (const id of ["site-menu", "motion-stack", "lab", "campaign", "journeys", "apps", "app-detail", "services", "resources", "recommendations"]) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
   }
 });
@@ -21,7 +21,7 @@ test("homepage contains the validated positioning and section contracts", () => 
 test("homepage reveal groups declare capped stagger indices", () => {
   const revealTags = [...html.matchAll(pageRevealTagPattern)].map(([tag]) => tag);
   const revealIndices = revealTags.map((tag) => Number(tag.match(/\bdata-reveal-index="(\d+)"/)?.[1]));
-  assert.deepEqual(revealIndices, [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(revealIndices, [0, 1, 2, 3, 4, 5, 6, 7]);
 });
 
 test("reveal group matching excludes stagger-index-only elements", () => {
@@ -170,6 +170,21 @@ test("the app picker is a static grid, never an autoplaying rail", () => {
   assert.equal((grid.match(/aria-current=["']true["']/g) ?? []).length, 1);
 });
 
+test("the app counts match the four apps wherever the page states them", () => {
+  assert.doesNotMatch(html, /cliptwist/i);
+  const hero = html.match(/<section class="hero">[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.match(hero, /<strong>2 apps sur les stores<\/strong>, 4 au compteur, tout documenté en public\./);
+  assert.equal((hero.match(/<span class="proof-icons"[\s\S]*?<\/span>/)?.[0].match(/<img\b/g) ?? []).length, 2);
+  const apps = html.match(/<section id="apps"[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.match(apps, /<p class="developer-path">Dans la data au quotidien, formé au développement, quatre apps au compteur\.<\/p>/);
+  const about = html.match(/<section id="about"[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.match(about, /Quatre apps au compteur, deux sur les stores\./);
+});
+
+test("visible copy never uses long or en dashes", () => {
+  assert.doesNotMatch(html, /[—–]/);
+});
+
 test("the mobile action bar defaults to the Lab and keeps contextual service actions", () => {
   const bar = html.match(/<div class="action-bar"[^>]*>[\s\S]*?<\/div>/)?.[0] ?? "";
   assert.ok(bar, "action bar");
@@ -180,8 +195,12 @@ test("the mobile action bar defaults to the Lab and keeps contextual service act
   assert.match(bar, /<span class="action-bar-text" data-variant-audit hidden>/);
   assert.match(bar, /data-variant-cadrage hidden href="https:\/\/cal\.com\/dembs\/cadrage-app"/);
   assert.match(bar, /data-variant-audit hidden href="https:\/\/cal\.com\/dembs\/audit-stores"/);
+  assert.match(bar, /<span class="action-bar-text" data-variant-motion hidden><strong>Motion Stack<\/strong>/);
+  assert.match(bar, /data-variant-motion hidden href="https:\/\/klubizz\.com\/@dembs-lab\/contenus" target="_blank" rel="noopener"/);
   assert.match(html, /<section id="services"[^>]*data-action="cadrage"/);
   assert.match(html, /<article id="audit"[^>]*data-action="audit"/);
+  const motion = html.match(/<section id="motion-stack"[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.ok((motion.match(/data-action="motion"/g) ?? []).length >= 1, "the course switches the bar while on screen");
 });
 
 test("web fonts are self-hosted and preloaded", () => {
@@ -293,38 +312,78 @@ test("the menu carries the Lab action and a labelled toggle icon", () => {
   assert.doesNotMatch(html, /☰/);
 });
 
-test("the Lab leads the homepage sections before Motion Stack and the journeys", () => {
+test("Motion Stack leads the homepage right after the hero, before the Lab and the journeys", () => {
   const heroIndex = html.indexOf('<section class="hero">');
-  const labIndex = html.indexOf('<section id="lab"');
   const motionIndex = html.indexOf('<section id="motion-stack"');
+  const labIndex = html.indexOf('<section id="lab"');
   const journeysIndex = html.indexOf('<section id="journeys"');
-  assert.ok(heroIndex > -1 && labIndex > heroIndex && motionIndex > labIndex && journeysIndex > motionIndex, "hero, then Lab, then Motion Stack, then journeys");
-  const motion = html.match(/<section id="motion-stack"[\s\S]*?<\/section>/)?.[0] ?? "";
-  assert.match(motion, /<div class="card-grid">\s*<a class="soon"/);
-  assert.match(motion, /liste d’attente est ouverte/);
-  assert.match(html, /<nav id="site-menu"[\s\S]*?<a href="#motion-stack">Montage vidéo<\/a>/);
+  assert.ok(heroIndex > -1 && motionIndex > heroIndex && labIndex > motionIndex && journeysIndex > labIndex, "hero, then Motion Stack, then Lab, then journeys");
+  // The menu opens on the course, and the hero points at it before anything else.
+  const menu = html.match(/<nav id="site-menu"[\s\S]*?<\/nav>/)?.[0] ?? "";
+  assert.match(menu, /aria-label="Navigation principale" hidden>\s*<a href="#motion-stack">Montage vidéo<\/a>/);
+  const hero = html.match(/<section class="hero">[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.match(hero, /<div class="hero-copy">\s*<a class="hero-news" href="#motion-stack"><span class="hero-news-tag">Nouveau<\/span><span class="hero-news-text">Motion Stack, la formation<\/span>/);
   const services = html.match(/<section id="services"[\s\S]*?<\/section>/)?.[0] ?? "";
-  assert.doesNotMatch(services, /class="soon"/);
+  assert.doesNotMatch(services, /motion-stack|Motion Stack/);
 });
 
-test("the upcoming service links to the Motion Stack waiting list", () => {
-  const soon = html.match(/<a class="soon"[\s\S]*?<\/a>/)?.[0] ?? "";
-  assert.ok(soon, "Motion Stack service card");
-  assert.match(soon, /href="https:\/\/ressources\.dembs\.fr\/motion-stack"/);
-  assert.match(soon, /<p class="meta">Liste d’attente ouverte<\/p>/);
-  assert.match(soon, /<h3>Montage vidéo accéléré par l’IA<\/h3>/);
-  assert.match(soon, /Découvrir Motion Stack/);
-  assert.match(soon, /data-motion-mascot/);
-  assert.match(soon, /class="motion-mascot-stage" aria-hidden="true"/);
-  assert.match(soon, /data-motion-face/);
-  assert.match(soon, /class="motion-freddy-body"/);
-  assert.match(soon, /class="motion-wave"/);
-  assert.match(soon, /class="motion-spark"/);
-  assert.match(soon, /class="motion-frame"/);
-  assert.match(soon, /class="motion-clapper"/);
-  assert.match(soon, /class="motion-clapper-slate"/);
-  assert.doesNotMatch(soon, /motion-(?:scissors|cut-line)/);
-  assert.doesNotMatch(soon, /motion-(?:timeline|track|playhead)/);
-  assert.doesNotMatch(soon, /motion-(?:leg|shoe|torso|arm|cap|mouth)/);
+test("the old waiting list is gone now that the course is out", () => {
+  assert.doesNotMatch(html, /ressources\.dembs\.fr\/motion-stack/);
+  assert.doesNotMatch(html, /liste d’attente/i);
+  assert.doesNotMatch(html, /class="soon"|motion-clapper|motion-mascot-stage/);
   assert.doesNotMatch(html, /class="note"/);
+});
+
+test("the Motion Stack section sends to the course in the Lab and never shows a price", () => {
+  const motion = html.match(/<section id="motion-stack"[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.ok(motion, "Motion Stack section");
+  assert.match(motion, /<a class="button ms-cta" href="https:\/\/klubizz\.com\/@dembs-lab\/contenus" target="_blank" rel="noopener">/);
+  assert.match(motion, /Claude Code/);
+  for (const promise of ["Mes skills Claude Code", "Tous mes prompts", "Le kit et les leçons", "Le module 3D", "Monde 0", "Monde 1", "Monde 2"]) {
+    assert.ok(motion.includes(promise), promise);
+  }
+  for (const use of ["Montrer ton app en action", "Présenter un produit en 3D", "Donner du rythme à tes vidéos face caméra"]) {
+    assert.ok(motion.includes(use), use);
+  }
+  assert.doesNotMatch(motion, /€|\bprix\b|gratuit/i);
+  // No price, but no doubt either: the course is sold. The 3D module is sold like the rest (Demba's call, 17/11): never "en option".
+  assert.match(motion, /<span class="ms-where">En vente dans l’onglet Contenus<\/span>/);
+  assert.match(motion, /<strong>Le module 3D<\/strong><span>Objets en 3D, objets qui se matérialisent et effets spéciaux\.<\/span>/);
+  assert.doesNotMatch(motion, /en option/i);
+});
+
+test("the course blocks reveal one by one, the section itself is always there", () => {
+  const motion = html.match(/<section id="motion-stack"[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.doesNotMatch(motion.match(/^<section\b[^>]*>/)?.[0] ?? "", /\bdata-reveal\b/);
+  assert.match(motion, /<div class="ms-copy" data-reveal data-reveal-index="0">/);
+  assert.match(motion, /<div class="ms-timeline" data-action="motion" data-reveal data-reveal-index="1">/);
+  assert.match(motion, /<div class="ms-inside" data-action="motion" data-reveal data-reveal-index="0">/);
+  assert.match(motion, /<div class="ms-run" data-action="motion" data-reveal data-reveal-index="0">/);
+});
+
+test("the three uses are clips on an edit timeline, readable as a plain list", () => {
+  const motion = html.match(/<section id="motion-stack"[\s\S]*?<\/section>/)?.[0] ?? "";
+  const timeline = motion.match(/<div class="ms-timeline"[\s\S]*?<span class="ms-playhead" aria-hidden="true"><i><\/i><\/span>/)?.[0] ?? "";
+  assert.ok(timeline, "timeline with its playhead");
+  const list = timeline.match(/<ul class="ms-uses" aria-label="Pour quoi faire">[\s\S]*?<\/ul>/)?.[0] ?? "";
+  const uses = [...list.matchAll(/<span class="ms-clip">(?:<span class="ms-tc" aria-hidden="true">\d\d:\d\d<\/span>)?([^<]+)<\/span>/g)].map((m) => m[1]);
+  assert.deepEqual(uses, ["Montrer ton app en action", "Présenter un produit en 3D", "Donner du rythme à tes vidéos face caméra"]);
+  for (const track of ["Sous-titres", "Animations", "3D", "Vidéo"]) assert.match(timeline, new RegExp(`class="ms-track-name"[^>]*>${track}</span>`));
+  // Decoration stays out of the accessible list: ruler, captions lane, ghosts and playhead.
+  assert.match(timeline, /<div class="ms-ruler" aria-hidden="true">/);
+  assert.match(timeline, /<div class="ms-track ms-track-subs" aria-hidden="true">/);
+  assert.doesNotMatch(motion, /class="ms-uses"[^>]*>\s*<li>/);
+});
+
+test("one Kuts on the page: the pixel sprite running the course bar, no video", async () => {
+  const motion = html.match(/<section id="motion-stack"[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.equal((html.match(/class="ms-kuts"/g) ?? []).length, 1);
+  assert.match(motion, /<div class="ms-course">\s*<span class="ms-kuts" aria-hidden="true"><\/span>\s*<div class="ms-bar" aria-hidden="true"><\/div>\s*<ol class="ms-path"/);
+  assert.match(motion, /<\/ol>\s*<\/div>\s*<a class="button ms-cta" href="https:\/\/klubizz\.com\/@dembs-lab\/contenus" target="_blank" rel="noopener">Voir la formation dans le Lab<\/a>/);
+  assert.doesNotMatch(html, /motion-mascot|motion-freddy|data-motion-face|data-motion-mascot|ms-paws|ms-chip|Moi, c’est Kuts/);
+  assert.doesNotMatch(html, /<video\b|motion-stack-promo|motion-stack-poster/);
+  const sprite = await stat(new URL("../assets/img/kuts-pixel.png", import.meta.url));
+  assert.ok(sprite.size < 20 * 1024, `sprite is ${sprite.size} bytes`);
+  await assert.rejects(stat(new URL("../assets/video", import.meta.url)));
+  await assert.rejects(stat(new URL("../assets/icons/cliptwist.png", import.meta.url)));
 });

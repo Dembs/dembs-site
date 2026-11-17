@@ -10,7 +10,9 @@ directement le contenu a mettre a la racine web.
     assets/js/content.js       donnees des applications et campagnes TikTok
     assets/js/site.js          menu, campagne, carrousel et revelations au defilement
     assets/icons/              les 4 icones d'apps, 256x256
-    assets/img/                photo (hero, avatar) et image de partage og-image.jpg
+    assets/img/                photo (hero, avatar), image de partage og-image.jpg,
+                               vignettes Motion Stack (ms-*.webp) et planche pixel de Kuts
+                               (kuts-pixel.png, 8 poses de 60x53, copiee du kit)
     assets/fonts/ + css/fonts.css  polices hebergees localement, aucune requete Google Fonts
     assets/symbole-dembs.svg   symbole de marque et favicon
     tests/                     contrats de contenu, de balisage et de comportement
@@ -64,7 +66,9 @@ Lancer aussi la suite de verification avant de pousser :
 
 ## Mettre un contenu TikTok en avant
 
-1. Ajouter une entrée complète dans `CAMPAIGNS` dans `assets/js/content.js`.
+1. Ajouter une entrée complète dans `CAMPAIGNS` dans `assets/js/content.js` : un encadré
+   (`eyebrow`, `title`, `description`, `cta`, `url`), ou seulement `section: "<id>"` pour
+   descendre directement à une section de la page sans encadré.
 2. Tester `http://127.0.0.1:8777/?focus=<identifiant>`.
 3. Placer `https://dembs.fr/?focus=<identifiant>` dans la bio.
 4. Signaler `affiliate: true` pour tout lien affilié.
@@ -97,8 +101,18 @@ La barre d'action fixe (mobile) bascule sur l'audit quand la carte `#audit` est 
 
 ## Motion Stack
 
-La section `#motion-stack` est placee sous le hero le temps de la campagne video. Le
-commentaire dans `index.html` explique comment la redescendre.
+La formation est sortie : la section `#motion-stack` est placee juste sous le hero, avant
+le Lab, sur la page claire (une lueur cobalt et violette en degrades radiaux, sans bord).
+Les trois usages sont des clips poses sur une timeline de montage en HTML/CSS, avec une
+tete de lecture qui balaie. Kuts, la mascotte pixel (`assets/img/kuts-pixel.png`, affichee
+en x2, `image-rendering: pixelated`, animee en `steps()`), court une fois sur la barre
+« Monde 0 / 1 / 2 » et finit en pointant le bouton. Le bouton mene a l'onglet Contenus du
+Lab sur Klubizz. Aucun prix n'est affiche sur le site, mais la section dit que la
+formation est en vente. La campagne `?focus=motion-stack` descend directement a la
+section, sans encadre qui la repeterait.
+
+La barre d'action fixe (mobile) passe sur Motion Stack tant que la timeline, la liste
+« Ce qu'il y a dedans » ou le parcours est a l'ecran.
 
 ## Mesure d'audience
 

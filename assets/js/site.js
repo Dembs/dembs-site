@@ -4,32 +4,6 @@ export function revealDelay(index) {
   return Math.min(Math.max(index, 0), 4) * 70;
 }
 
-export function getMascotGaze(face, pointer) {
-  const centreX = face.left + face.width / 2;
-  const centreY = face.top + face.height / 2;
-  const normalise = (value, radius, limit) => Math.max(-limit, Math.min(limit, Math.round((value / radius) * limit)));
-  return {
-    x: normalise(pointer.clientX - centreX, face.width / 2, 8),
-    y: normalise(pointer.clientY - centreY, face.height / 2, 8)
-  };
-}
-
-export function initMotionMascot(root = document) {
-  const card = root.querySelector("[data-motion-mascot]");
-  const face = card?.querySelector("[data-motion-face]");
-  if (!card || !face) return;
-
-  const view = root.defaultView ?? window;
-  if (view.matchMedia("(prefers-reduced-motion: reduce)").matches || view.matchMedia("(pointer: coarse)").matches) return;
-
-  const setGaze = ({ x, y }) => {
-    card.style.setProperty("--gaze-x", `${x}px`);
-    card.style.setProperty("--gaze-y", `${y}px`);
-  };
-  card.addEventListener("pointermove", (event) => setGaze(getMascotGaze(face.getBoundingClientRect(), event)));
-  card.addEventListener("pointerleave", () => setGaze({ x: 0, y: 0 }));
-}
-
 export function initReveals(root = document) {
   const items = [...root.querySelectorAll("[data-reveal]")];
   if (!items.length) return;
@@ -114,15 +88,27 @@ export function selectApp(id, root = document, { animate = true } = {}) {
   detail.style.setProperty("--app-badge-background", app.badgeBackground);
   detail.style.setProperty("--app-badge-foreground", app.badgeForeground);
 
+  // Store apps show their two store buttons; a web service shows its status and
+  // one link to its site; anything else shows its status alone.
   const stores = detail.querySelector("[data-app-stores]");
   const status = detail.querySelector("[data-app-status]");
+  const web = detail.querySelector("[data-app-web]");
   const published = app.status === "published";
+  const online = !published && typeof app.web === "string";
+  detail.dataset.status = app.status;
   stores.hidden = !published;
   status.hidden = published;
   status.textContent = app.statusLabel;
   if (published) {
     detail.querySelector("[data-app-store]").href = app.appStore;
     detail.querySelector("[data-play-store]").href = app.playStore;
+  }
+  if (web) {
+    web.hidden = !online;
+    if (online) {
+      web.href = app.web;
+      web.textContent = app.webLabel ?? `Ouvrir ${new URL(app.web).host}`;
+    }
   }
   root.querySelectorAll("[data-app-id]").forEach((button) => {
     button.setAttribute("aria-current", String(button.dataset.appId === id));
@@ -196,12 +182,26 @@ export function initMenu(root = document) {
   });
 }
 
+// A campaign that points at a section of the page lands on it directly. Web fonts
+// swap in after this first jump and can move the section, so it lands once more
+// when they are ready, unless the visitor has already started scrolling.
+function scrollToSection(root, id) {
+  const target = root.getElementById?.(id);
+  if (!target?.scrollIntoView) return;
+  const view = root.defaultView;
+  const land = () => target.scrollIntoView({ block: "start", behavior: "instant" });
+  land();
+  const landedAt = view?.scrollY;
+  root.fonts?.ready?.then(() => { if (view?.scrollY === landedAt) land(); });
+}
+
 export function renderFocusCampaign(root = document, search = location.search) {
   const container = root.querySelector("#campaign");
   if (!container) return;
   const campaign = resolveCampaign(new URLSearchParams(search).get("focus"));
-  if (!campaign) {
+  if (!campaign || campaign.section) {
     container.hidden = true;
+    if (campaign) scrollToSection(root, campaign.section);
     return;
   }
   container.querySelector("[data-campaign-eyebrow]").textContent = campaign.eyebrow;
@@ -214,12 +214,20 @@ export function renderFocusCampaign(root = document, search = location.search) {
   container.hidden = false;
 }
 
-// The fixed bar sells the cadrage call by default and switches to the audit while
-// the audit card is on screen, so the visible offer and the button always agree.
+// The fixed bar invites to the Lab by default and follows what is on screen: the
+// Motion Stack course, the cadrage call, then the audit card, so the visible offer
+// and the button always agree.
+const ACTION_VARIANTS = ["lab", "motion", "cadrage", "audit"];
+
+export function pickActionVariant(variants) {
+  for (const name of ["audit", "cadrage", "motion"]) if (variants.includes(name)) return name;
+  return "lab";
+}
+
 export function setActionBarVariant(bar, variant) {
   if (!bar) return;
   bar.dataset.variant = variant;
-  for (const name of ["lab", "cadrage", "audit"]) {
+  for (const name of ACTION_VARIANTS) {
     bar.querySelectorAll(`[data-variant-${name}]`).forEach((node) => { node.hidden = variant !== name; });
   }
 }
@@ -237,8 +245,7 @@ export function initActionBar(root = document) {
       if (entry.isIntersecting) visible.add(entry.target);
       else visible.delete(entry.target);
     }
-    const variants = [...visible].map((target) => target.dataset.action);
-    setActionBarVariant(bar, variants.includes("audit") ? "audit" : variants.includes("cadrage") ? "cadrage" : "lab");
+    setActionBarVariant(bar, pickActionVariant([...visible].map((target) => target.dataset.action)));
   }, { threshold: 0.35 });
   targets.forEach((target) => observer.observe(target));
 }
@@ -249,5 +256,4 @@ if (typeof document !== "undefined") {
   renderFocusCampaign();
   initAppPicker();
   initReveals();
-  initMotionMascot();
 }
