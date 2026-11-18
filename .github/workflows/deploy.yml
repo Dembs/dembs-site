@@ -65,7 +65,7 @@ jobs:
         run: |
           echo "Attente de la propagation, 15 s"
           sleep 15
-          for url in https://dembs.fr/ https://dembs.fr/mentions-legales.html; do
+          for url in https://dembs.fr/ https://dembs.fr/mentions-legales.html https://dembs.fr/liens/; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 30 "$url" || echo "erreur")
             echo "$url repond : $code"
           done
